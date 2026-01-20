@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FaPlusCircle,
   FaSearch,
@@ -75,6 +75,9 @@ const LogoFallback = styled.div`
 `;
 
 const NomePainel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: ${({ theme }) => theme.cores.texto};
@@ -86,6 +89,20 @@ const NomePainel = styled.div`
   @media (min-width: 720px) {
     max-width: 280px;
   }
+`;
+
+const pulseOnline = keyframes`
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+`;
+
+const StatusBolinha = styled.span`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ $online }) => ($online ? "#22c55e" : "#ef4444")};
+  animation: ${({ $online }) => ($online ? pulseOnline : "none")} 2s ease-in-out infinite;
+  flex-shrink: 0;
 `;
 
 const ItemContainer = styled.div`
@@ -228,6 +245,9 @@ const MobileLogoFallback = styled.div`
 `;
 
 const MobileNomePainel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 20px;
   font-weight: 600;
   color: ${({ theme }) => theme.cores.texto};
@@ -510,6 +530,25 @@ export default function LayoutApp() {
   const { naoLidas } = usarNotificacoes();
   const painel = usePainelPublico("escola_padrao");
   const navigate = useNavigate();
+  const [online, setOnline] = useState(navigator.onLine);
+
+  // Detectar mudanças de conexão
+  useEffect(() => {
+    function handleOnline() {
+      setOnline(true);
+    }
+    function handleOffline() {
+      setOnline(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const IconeTema = modo === "escuro" ? FaSun : FaMoon;
   const labelTema = modo === "escuro" ? "Modo Claro" : "Modo Escuro";
@@ -535,7 +574,10 @@ export default function LayoutApp() {
           ) : (
             <MobileLogoFallback />
           )}
-          <MobileNomePainel>{painel?.nomePainel || "Helpdesk"}</MobileNomePainel>
+          <MobileNomePainel>
+            {painel?.nomePainel || "Helpdesk"}
+            <StatusBolinha $online={online} title={online ? "Online" : "Offline"} />
+          </MobileNomePainel>
         </MobileLogo>
         <HeaderActions>
           {!eVisitante && (
@@ -564,7 +606,10 @@ export default function LayoutApp() {
           ) : (
             <LogoFallback />
           )}
-          <NomePainel>{painel?.nomePainel || "Helpdesk"}</NomePainel>
+          <NomePainel>
+            {painel?.nomePainel || "Helpdesk"}
+            <StatusBolinha $online={online} title={online ? "Online" : "Offline"} />
+          </NomePainel>
         </MarcaPainel>
 
         {!eVisitante && (

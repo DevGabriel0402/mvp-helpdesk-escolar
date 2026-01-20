@@ -7,6 +7,7 @@ import { GlobalStyle } from "./estilos/GlobalStyle";
 import { ProvedorAuth } from "./contextos/AuthContexto";
 import { ProvedorTema, usarTema } from "./contextos/TemaContexto";
 import { ProvedorNotificacoes } from "./contextos/NotificacoesContexto";
+import { ProvedorCarregando } from "./contextos/CarregandoContexto";
 import Rotas from "./app/rotas/Rotas";
 
 function AppConteudo() {
@@ -22,7 +23,9 @@ function AppConteudo() {
       <BrowserRouter>
         <ProvedorAuth>
           <ProvedorNotificacoes>
-            <Rotas />
+            <ProvedorCarregando>
+              <Rotas />
+            </ProvedorCarregando>
           </ProvedorNotificacoes>
         </ProvedorAuth>
       </BrowserRouter>

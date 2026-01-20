@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import {
   FaSave,
   FaUndo,
@@ -8,6 +8,7 @@ import {
   FaEnvelope,
   FaBuilding,
   FaTrash,
+  FaWifi,
 } from "react-icons/fa";
 import { usarAuth } from "../../../contextos/AuthContexto";
 import {
@@ -297,6 +298,20 @@ const InfoItem = styled.div`
   }
 `;
 
+const pulseOnline = keyframes`
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+`;
+
+const StatusBolinha = styled.span`
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: ${({ $online }) => ($online ? "#22c55e" : "#ef4444")};
+  animation: ${({ $online }) => ($online ? pulseOnline : "none")} 2s ease-in-out infinite;
+  flex-shrink: 0;
+`;
+
 const Acoes = styled.div`
   display: flex;
   align-items: center;
@@ -380,8 +395,27 @@ export default function PerfilAdmin() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [arrastando, setArrastando] = useState(false);
+  const [online, setOnline] = useState(navigator.onLine);
 
   const inputRef = useRef(null);
+
+  // Detectar mudanças de conexão
+  useEffect(() => {
+    function handleOnline() {
+      setOnline(true);
+    }
+    function handleOffline() {
+      setOnline(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const nomeAdmin = useMemo(
     () => perfil?.nome || perfil?.displayName || "Administrador",
@@ -645,6 +679,22 @@ export default function PerfilAdmin() {
                 <div className="content">
                   <span className="label">Email</span>
                   <span className="value">{emailAdmin}</span>
+                </div>
+              </InfoItem>
+
+              <InfoItem>
+                <div className="icon-box">
+                  <FaWifi />
+                </div>
+                <div className="content">
+                  <span className="label">Status</span>
+                  <span
+                    className="value"
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <StatusBolinha $online={online} />
+                    {online ? "Online" : "Offline"}
+                  </span>
                 </div>
               </InfoItem>
             </InfoGrid>
