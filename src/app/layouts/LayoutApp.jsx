@@ -16,6 +16,7 @@ import { RxDashboard } from "react-icons/rx";
 import { usarAuth } from "../../contextos/AuthContexto";
 import { usarTema } from "../../contextos/TemaContexto";
 import { usarNotificacoes } from "../../contextos/NotificacoesContexto";
+import { usePainelPublico } from "../../hooks/usePainelPublico";
 
 const Shell = styled.div`
   min-height: 100vh;
@@ -45,12 +46,46 @@ const Sidebar = styled.aside`
   }
 `;
 
-const SidebarLogo = styled.div`
-  font-size: 1rem;
-  font-weight: 800;
+const MarcaPainel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   margin-bottom: 20px;
   padding-left: 10px;
+`;
+
+const LogoPainel = styled.img`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  background: rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+`;
+
+const LogoFallback = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+`;
+
+const NomePainel = styled.div`
+  font-size: 18px;
+  font-weight: 600;
   color: ${({ theme }) => theme.cores.texto};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+
+  @media (min-width: 720px) {
+    max-width: 280px;
+  }
 `;
 
 const ItemContainer = styled.div`
@@ -169,9 +204,37 @@ const MobileHeader = styled.header`
 `;
 
 const MobileLogo = styled.div`
-  font-size: 1.1rem;
-  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+`;
+
+const MobileLogoPainel = styled.img`
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  background: rgba(0, 0, 0, 0.25);
+`;
+
+const MobileLogoFallback = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  background: rgba(255, 255, 255, 0.06);
+`;
+
+const MobileNomePainel = styled.div`
+  font-size: 20px;
+  font-weight: 600;
   color: ${({ theme }) => theme.cores.texto};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 `;
 
 const HeaderActions = styled.div`
@@ -331,6 +394,7 @@ const AbaLink = styled(NavLink)`
   }
 `;
 
+// eslint-disable-next-line no-unused-vars
 function NavItemDesktop({ to, icon: Icon, label, end = false }) {
   const location = useLocation();
   const isActive = end ? location.pathname === to : location.pathname.startsWith(to);
@@ -354,7 +418,7 @@ function NavItemDesktop({ to, icon: Icon, label, end = false }) {
     </ItemContainer>
   );
 }
-
+// eslint-disable-next-line no-unused-vars
 function AbaMobile({ to, icon: Icon, title, end = false }) {
   const location = useLocation();
   const isActive = end ? location.pathname === to : location.pathname.startsWith(to);
@@ -444,6 +508,7 @@ export default function LayoutApp() {
   const { sair, perfil, eVisitante } = usarAuth();
   const { modo, alternarTema } = usarTema();
   const { naoLidas } = usarNotificacoes();
+  const painel = usePainelPublico("escola_padrao");
   const navigate = useNavigate();
 
   const IconeTema = modo === "escuro" ? FaSun : FaMoon;
@@ -464,29 +529,43 @@ export default function LayoutApp() {
 
       {/* Mobile Header */}
       <MobileHeader>
-        <MobileLogo>Helpdesk</MobileLogo>
+        <MobileLogo>
+          {painel?.logo?.url256 ? (
+            <MobileLogoPainel src={painel.logo.url256} alt="Logo do painel" />
+          ) : (
+            <MobileLogoFallback />
+          )}
+          <MobileNomePainel>{painel?.nomePainel || "Helpdesk"}</MobileNomePainel>
+        </MobileLogo>
         <HeaderActions>
           {!eVisitante && (
             <MobileBellBtn
               onClick={() => navigate("/app/notificacoes")}
               title="Notificações"
             >
-              <FaBell />
+              <FaBell size={20} />
               {naoLidas > 0 && <Badge>{naoLidas > 99 ? "99+" : naoLidas}</Badge>}
             </MobileBellBtn>
           )}
           <MobileThemeBtn onClick={alternarTema}>
-            <IconeTema />
+            <IconeTema size={20} />
           </MobileThemeBtn>
           <MobileLogoutBtn onClick={sair}>
-            <FaSignOutAlt />
+            <FaSignOutAlt size={20} />
           </MobileLogoutBtn>
         </HeaderActions>
       </MobileHeader>
 
       {/* Desktop Sidebar */}
       <Sidebar>
-        <SidebarLogo>Helpdesk Escolar</SidebarLogo>
+        <MarcaPainel>
+          {painel?.logo?.url256 ? (
+            <LogoPainel src={painel.logo.url256} alt="Logo do painel" />
+          ) : (
+            <LogoFallback />
+          )}
+          <NomePainel>{painel?.nomePainel || "Helpdesk"}</NomePainel>
+        </MarcaPainel>
 
         {!eVisitante && (
           // Use RxDashboard for Admin Home

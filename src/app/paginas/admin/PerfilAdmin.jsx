@@ -19,6 +19,7 @@ import {
   carregarPerfilBasicoLocal,
   salvarPerfilBasico,
 } from "../../../servicos/firebase/perfilServico";
+import { salvarPainelPublico } from "../../../servicos/firebase/painelServico";
 import { aplicarFavicon, aplicarManifestDinamico } from "../../../utils/aplicarIconesPWA";
 import { toast } from "react-toastify";
 
@@ -298,9 +299,15 @@ const InfoItem = styled.div`
 
 const Acoes = styled.div`
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 6px;
+
+  @media (min-width: 768px) {
+    justify-content: flex-start;
+  }
 `;
 
 const Botao = styled.button`
@@ -318,6 +325,11 @@ const Botao = styled.button`
   font-weight: 500;
   font-size: 14px;
   transition: all 0.2s;
+  flex: 1;
+
+  @media (min-width: 768px) {
+    flex: none;
+  }
 
   &:hover:not(:disabled) {
     background: #3b82f6;
@@ -494,6 +506,12 @@ export default function PerfilAdmin() {
       };
 
       await salvarPerfilBasico(uid, dados);
+
+      // Salvar no painel público para visitantes
+      await salvarPainelPublico("escola_padrao", {
+        nomePainel: dados.nomePainel,
+        logo: { url256: dados.logo?.url256 || "" },
+      });
 
       document.title = dados.nomePainel;
       if (dados.logo?.url256) {
