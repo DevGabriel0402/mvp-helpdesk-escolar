@@ -1,7 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { toast } from "react-toastify";
-import { FaSave, FaUndo, FaCloudUploadAlt, FaPalette, FaSlidersH, FaImage, FaUserShield, FaEnvelope, FaPlus, FaTrash, FaCheckCircle, FaCircle } from "react-icons/fa";
+import {
+  FaSave,
+  FaUndo,
+  FaCloudUploadAlt,
+  FaUserShield,
+  FaEnvelope,
+  FaIdCard,
+  FaImage,
+} from "react-icons/fa";
 import { usarConfiguracoes } from "../../../contextos/ConfiguracoesContexto";
 import { usarAuth } from "../../../contextos/AuthContexto";
 import { enviarImagemParaCloudinary } from "../../../servicos/cloudinaryServico";
@@ -11,14 +19,32 @@ const Container = styled.div`
   flex-direction: column;
   gap: 24px;
   width: 100%;
+  max-width: 900px;
   margin: 0 auto;
-  padding-bottom: 150px;
+  padding-bottom: 40px;
 `;
 
-const Sessao = styled.section`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+const Titulo = styled.h1`
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.cores.texto};
+  margin: 0 0 8px 0;
+`;
+
+const Subtitulo = styled.p`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.cores.textoFraco};
+  margin: 0 0 24px 0;
+`;
+
+const GridDupla = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const Cartao = styled.div`
@@ -33,425 +59,386 @@ const HeaderCartao = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
-  
+  margin-bottom: 20px;
+
   h2 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: ${({ theme }) => theme.cores.texto};
-    letter-spacing: -0.01em;
   }
 
   svg {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: ${({ theme }) => theme.cores.destaque};
     opacity: 0.8;
   }
-`;
-
-const PerfilInfo = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
 `;
 
 const InfoItem = styled.div`
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px;
+  padding: 14px;
   background: ${({ theme }) => theme.cores.brancoTransparente};
-  border-radius: 8px;
-  
+  border-radius: 10px;
+  margin-bottom: 12px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
   .icon-box {
-    width: 38px;
-    height: 38px;
-    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     background: ${({ theme }) => theme.cores.destaque};
     color: white;
     display: grid;
     place-items: center;
     font-size: 1rem;
+    flex-shrink: 0;
   }
 
   .content {
     display: flex;
     flex-direction: column;
-    
+    min-width: 0;
+
     label {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
-      font-weight: 800;
+      font-weight: 700;
       opacity: 0.5;
       letter-spacing: 0.05em;
+      margin-bottom: 2px;
     }
-    
+
     span {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 500;
+      color: ${({ theme }) => theme.cores.texto};
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 `;
 
-const GridOpcoes = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-`;
-
-const OpcaoCor = styled.label`
+const DropZone = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 20px;
+  border: 2px dashed ${({ theme }) => theme.cores.borda};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.cores.brancoTransparente};
   cursor: pointer;
-  
-  .label-text {
-    font-size: 0.85rem;
-    font-weight: 500;
+  transition: all 0.2s ease;
+  min-height: 180px;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  ${({ $arrastando }) =>
+    $arrastando &&
+    `
+    border-color: #3B82F6;
+    background: rgba(59, 130, 246, 0.1);
+  `}
+
+  svg {
+    font-size: 2rem;
     color: ${({ theme }) => theme.cores.textoFraco};
   }
-`;
 
-const InputCorWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border: 1px solid ${({ theme }) => theme.cores.borda};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.cores.fundo};
-  transition: border-color 0.2s;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.cores.destaque};
-  }
-
-  input[type="color"] {
-    appearance: none;
-    border: none;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    background: transparent;
-    padding: 0;
-    &::-webkit-color-swatch { border: none; border-radius: 4px; }
-  }
-
-  code {
+  span {
     font-size: 0.85rem;
-    font-family: 'JetBrains Mono', monospace;
-    opacity: 0.7;
-    text-transform: uppercase;
+    color: ${({ theme }) => theme.cores.textoFraco};
+    text-align: center;
   }
 `;
 
-const ManagerList = styled.div`
+const LogoPreview = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
-`;
-
-const ManagerItem = styled.div`
-  display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: ${({ theme }) => theme.cores.brancoTransparente};
-  border-radius: 12px;
-  border: 1px solid ${({ theme }) => theme.cores.borda};
+  gap: 16px;
 
-  input[type="text"] {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: white;
-    font-weight: 500;
-    font-size: 0.9rem;
-    outline: none;
+  img {
+    max-width: 120px;
+    max-height: 120px;
+    object-fit: contain;
+    border-radius: 8px;
   }
 
-  input[type="color"] {
-    width: 24px;
-    height: 24px;
-    border: none;
+  button {
+    background: transparent;
+    border: 1px solid ${({ theme }) => theme.cores.borda};
+    color: ${({ theme }) => theme.cores.texto};
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
     cursor: pointer;
-    background: transparent;
-    &::-webkit-color-swatch { border-radius: 50%; border: none; }
-  }
+    transition: all 0.2s;
 
-  .btn-remove {
-    background: transparent;
-    border: none;
-    color: #ff4d4d;
-    cursor: pointer;
-    padding: 6px;
-    opacity: 0.6;
-    &:hover { opacity: 1; }
-  }
-`;
-
-const BtnAdd = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px dashed ${({ theme }) => theme.cores.borda};
-  background: transparent;
-  color: ${({ theme }) => theme.cores.texto};
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 10px;
-  &:hover {
-    background: ${({ theme }) => theme.cores.brancoTransparente};
-    border-color: ${({ theme }) => theme.cores.destaque};
-  }
-`;
-
-const SliderGroup = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 30px;
-`;
-
-const SliderItem = styled.div`
-  .head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    span { font-size: 0.9rem; font-weight: 500; }
-    .value {
-      background: ${({ theme }) => theme.cores.destaque};
-      color: white;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 700;
+    &:hover {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
     }
   }
-  input[type="range"] {
-    width: 100%;
-    accent-color: ${({ theme }) => theme.cores.destaque};
-    cursor: pointer;
+`;
+
+const BotoesContainer = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+`;
+
+const BotaoSalvar = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  background: #3b82f6;
+  border: none;
+  color: white;
+
+  &:hover {
+    background: #2563eb;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
-const DropZone = styled.label`
-  width: 100%;
-  min-height: 200px;
-  border: 2px dashed ${({ theme }) => theme.cores.borda};
-  border-radius: ${({ theme }) => theme.ui.raio}px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  background: rgba(0,0,0,0.05);
-  &:hover { border-color: ${({ theme }) => theme.cores.destaque}; background: ${({ theme }) => theme.cores.brancoTransparente}; }
-  input { display: none; }
-  img { max-width: 300px; max-height: 150px; object-fit: contain; }
-`;
-
-const FloatingActions = styled.div`
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 48px);
-  max-width: 600px;
-  z-index: 100;
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 12px;
-  padding: 12px;
-  background: ${({ theme }) => theme.cores.vidroForte};
-  backdrop-filter: blur(20px);
-  border: 1px solid ${({ theme }) => theme.cores.borda};
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-  @media (min-width: 1024px) { left: calc(50% + 120px); }
-`;
-
-const BotaoBase = styled.button`
-  height: 52px;
+const BotaoReset = styled.button`
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 0.95rem;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
-`;
+  transition: all 0.2s ease;
 
-const BotaoSalvar = styled(BotaoBase)`
-  background: ${({ theme }) => theme.cores.destaque};
-  color: white;
-  border: none;
-  &:hover { filter: brightness(1.1); transform: translateY(-2px); }
-`;
-
-const BotaoReset = styled(BotaoBase)`
   background: transparent;
-  color: ${({ theme }) => theme.cores.texto};
   border: 1px solid ${({ theme }) => theme.cores.borda};
-  &:hover { background: ${({ theme }) => theme.cores.brancoTransparente}; }
+  color: ${({ theme }) => theme.cores.texto};
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 export default function PerfilAdmin() {
+  const { configUI, atualizarConfig } = usarConfiguracoes();
   const { perfil } = usarAuth();
-  const { configUI, atualizarConfig, carregando } = usarConfiguracoes();
-  const [localConfig, setLocalConfig] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const inputFile = useRef(null);
+
+  const [rascunho, setRascunho] = useState(null);
+  const [arrastando, setArrastando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [enviandoLogo, setEnviandoLogo] = useState(false);
 
   useEffect(() => {
-    if (configUI && !localConfig) {
-      setLocalConfig(JSON.parse(JSON.stringify(configUI)));
+    if (configUI) {
+      setRascunho(JSON.parse(JSON.stringify(configUI)));
     }
   }, [configUI]);
 
-  if (carregando || !localConfig) return null;
+  if (!rascunho) return null;
 
-  const save = (newConfig) => setLocalConfig({ ...newConfig });
+  const temAlteracoes = JSON.stringify(rascunho) !== JSON.stringify(configUI);
 
-  const addItem = (key) => {
-    const item = { id: `manual_${Date.now()}`, label: "Nova Opção", color: "#ffffff" };
-    save({ ...localConfig, [key]: [...localConfig[key], item] });
-  };
+  async function salvar() {
+    setSalvando(true);
+    try {
+      await atualizarConfig(rascunho);
+      toast.success("Configurações salvas!");
+    } catch (e) {
+      toast.error("Erro ao salvar configurações.");
+    } finally {
+      setSalvando(false);
+    }
+  }
 
-  const updateItem = (key, id, prop, val) => {
-    const updated = localConfig[key].map(it => it.id === id ? { ...it, [prop]: val } : it);
-    save({ ...localConfig, [key]: updated });
-  };
+  function resetar() {
+    setRascunho(JSON.parse(JSON.stringify(configUI)));
+    toast.info("Alterações descartadas.");
+  }
 
-  const removeItem = (key, id) => {
-    save({ ...localConfig, [key]: localConfig[key].filter(it => it.id !== id) });
-  };
-
-  const handleUploadLogo = async (e) => {
-    const file = e.target.files[0];
+  async function handleUploadLogo(file) {
     if (!file) return;
-    try {
-      setUploading(true);
-      const dados = await enviarImagemParaCloudinary(file);
-      save({ ...localConfig, logo: { ...dados, url: dados.url } });
-      toast.success("Logo atualizada!");
-    } finally { setUploading(false); }
-  };
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione uma imagem válida.");
+      return;
+    }
 
-  const salvarTudo = async () => {
+    setEnviandoLogo(true);
     try {
-      await atualizarConfig(localConfig);
-      toast.success("Tudo salvo com sucesso!");
-    } catch { toast.error("Erro ao salvar."); }
-  };
+      const result = await enviarImagemParaCloudinary(file);
+      setRascunho((prev) => ({
+        ...prev,
+        logo: {
+          url: result.secure_url,
+          publicId: result.public_id,
+          largura: result.width,
+          altura: result.height,
+        },
+      }));
+      toast.success("Logo enviado!");
+    } catch (e) {
+      toast.error("Erro ao enviar logo.");
+    } finally {
+      setEnviandoLogo(false);
+    }
+  }
+
+  function removerLogo() {
+    setRascunho((prev) => ({
+      ...prev,
+      logo: { url: "", publicId: "", largura: 0, altura: 0 },
+    }));
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    setArrastando(true);
+  }
+
+  function handleDragLeave() {
+    setArrastando(false);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setArrastando(false);
+    const file = e.dataTransfer.files[0];
+    handleUploadLogo(file);
+  }
 
   return (
     <Container>
-      <Sessao>
-        <Cartao>
-          <HeaderCartao><FaUserShield /><h2>Perfil e Acesso</h2></HeaderCartao>
-          <PerfilInfo>
-            <InfoItem>
-              <div className="icon-box"><FaUserShield /></div>
-              <div className="content"><label>Nome</label><span>{perfil?.nome || "Admin"}</span></div>
-            </InfoItem>
-            <InfoItem>
-              <div className="icon-box" style={{ background: '#3b82f6' }}><FaEnvelope /></div>
-              <div className="content"><label>E-mail</label><span>{perfil?.email || "---"}</span></div>
-            </InfoItem>
-          </PerfilInfo>
-        </Cartao>
-      </Sessao>
+      <div>
+        <Titulo>Perfil do Administrador</Titulo>
+        <Subtitulo>Gerencie suas informações e identidade visual</Subtitulo>
+      </div>
 
-      <Sessao>
-        <GridOpcoes>
-          <Cartao style={{ gridColumn: 'span 2' }}>
-            <HeaderCartao><FaPalette /><h2>Cores do Tema</h2></HeaderCartao>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
-              {Object.keys(localConfig.cores).map(chave => (
-                <OpcaoCor key={chave}>
-                  <span className="label-text">{chave}</span>
-                  <InputCorWrapper>
-                    <input type="color" value={localConfig.cores[chave]}
-                      onChange={e => save({ ...localConfig, cores: { ...localConfig.cores, [chave]: e.target.value } })} />
-                    <code>{localConfig.cores[chave]}</code>
-                  </InputCorWrapper>
-                </OpcaoCor>
-              ))}
+      <GridDupla>
+        {/* Informações do Perfil */}
+        <Cartao>
+          <HeaderCartao>
+            <FaUserShield />
+            <h2>Informações</h2>
+          </HeaderCartao>
+
+          <InfoItem>
+            <div className="icon-box">
+              <FaUserShield />
             </div>
-          </Cartao>
+            <div className="content">
+              <label>Nome</label>
+              <span>{perfil?.nome || "Administrador"}</span>
+            </div>
+          </InfoItem>
 
-          <Cartao>
-            <HeaderCartao><FaImage /><h2>Identidade</h2></HeaderCartao>
-            <DropZone>
-              {localConfig.logo?.url ? <img src={localConfig.logo.url} alt="Logo" /> :
-                <><FaCloudUploadAlt size={32} /><span style={{ opacity: 0.5 }}>Subir Logo</span></>}
-              <input type="file" accept="image/*" onChange={handleUploadLogo} disabled={uploading} />
-            </DropZone>
-          </Cartao>
-        </GridOpcoes>
-      </Sessao>
+          <InfoItem>
+            <div className="icon-box">
+              <FaEnvelope />
+            </div>
+            <div className="content">
+              <label>Email</label>
+              <span>{perfil?.email || "—"}</span>
+            </div>
+          </InfoItem>
 
-      <Sessao>
-        <GridOpcoes>
-          <Cartao>
-            <HeaderCartao><FaCheckCircle /><h2>Gerenciar Status</h2></HeaderCartao>
-            <ManagerList>
-              {localConfig.status?.map(s => (
-                <ManagerItem key={s.id}>
-                  <input type="color" value={s.color} onChange={e => updateItem('status', s.id, 'color', e.target.value)} />
-                  <input type="text" value={s.label} onChange={e => updateItem('status', s.id, 'label', e.target.value)} />
-                  <button className="btn-remove" onClick={() => removeItem('status', s.id)}><FaTrash /></button>
-                </ManagerItem>
-              ))}
-              <BtnAdd onClick={() => addItem('status')}><FaPlus /> Novo Status</BtnAdd>
-            </ManagerList>
-          </Cartao>
-
-          <Cartao>
-            <HeaderCartao><FaSlidersH /><h2>Prioridades</h2></HeaderCartao>
-            <ManagerList>
-              {localConfig.prioridades?.map(p => (
-                <ManagerItem key={p.id}>
-                  <input type="color" value={p.color} onChange={e => updateItem('prioridades', p.id, 'color', e.target.value)} />
-                  <input type="text" value={p.label} onChange={e => updateItem('prioridades', p.id, 'label', e.target.value)} />
-                  <button className="btn-remove" onClick={() => removeItem('prioridades', p.id)}><FaTrash /></button>
-                </ManagerItem>
-              ))}
-              <BtnAdd onClick={() => addItem('prioridades')}><FaPlus /> Nova Prioridade</BtnAdd>
-            </ManagerList>
-          </Cartao>
-        </GridOpcoes>
-      </Sessao>
-
-      <Sessao>
-        <Cartao>
-          <HeaderCartao><FaSlidersH /><h2>Ajustes Gerais de Interface</h2></HeaderCartao>
-          <SliderGroup>
-            <SliderItem>
-              <div className="head"><span>Bordas (Radius)</span><span className="value">{localConfig.preferencias.raio}px</span></div>
-              <input type="range" min="0" max="32" value={localConfig.preferencias.raio}
-                onChange={e => save({ ...localConfig, preferencias: { ...localConfig.preferencias, raio: Number(e.target.value) } })} />
-            </SliderItem>
-            <SliderItem>
-              <div className="head"><span>Transparência (Glass Blur)</span><span className="value">{localConfig.preferencias.blur}px</span></div>
-              <input type="range" min="0" max="40" value={localConfig.preferencias.blur}
-                onChange={e => save({ ...localConfig, preferencias: { ...localConfig.preferencias, blur: Number(e.target.value) } })} />
-            </SliderItem>
-          </SliderGroup>
+          <InfoItem>
+            <div className="icon-box">
+              <FaIdCard />
+            </div>
+            <div className="content">
+              <label>Função</label>
+              <span>Administrador</span>
+            </div>
+          </InfoItem>
         </Cartao>
-      </Sessao>
 
-      <FloatingActions>
-        <BotaoReset onClick={() => window.location.reload()}><FaUndo /> Descartar</BotaoReset>
-        <BotaoSalvar onClick={salvarTudo}><FaSave /> Salvar Todas as Alterações</BotaoSalvar>
-      </FloatingActions>
+        {/* Logo / Identidade */}
+        <Cartao>
+          <HeaderCartao>
+            <FaImage />
+            <h2>Logo / Favicon</h2>
+          </HeaderCartao>
+
+          {rascunho.logo?.url ? (
+            <LogoPreview>
+              <img src={rascunho.logo.url} alt="Logo" />
+              <button onClick={removerLogo}>Remover Logo</button>
+            </LogoPreview>
+          ) : (
+            <DropZone
+              $arrastando={arrastando}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => inputFile.current?.click()}
+            >
+              {enviandoLogo ? (
+                <span>Enviando...</span>
+              ) : (
+                <>
+                  <FaCloudUploadAlt />
+                  <span>
+                    Arraste uma imagem aqui
+                    <br />
+                    ou clique para selecionar
+                  </span>
+                </>
+              )}
+              <input
+                ref={inputFile}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => handleUploadLogo(e.target.files[0])}
+              />
+            </DropZone>
+          )}
+        </Cartao>
+      </GridDupla>
+
+      {/* Botões de Ação */}
+      <BotoesContainer>
+        <BotaoReset onClick={resetar} disabled={!temAlteracoes || salvando}>
+          <FaUndo />
+          Descartar
+        </BotaoReset>
+        <BotaoSalvar onClick={salvar} disabled={!temAlteracoes || salvando}>
+          <FaSave />
+          {salvando ? "Salvando..." : "Salvar Alterações"}
+        </BotaoSalvar>
+      </BotoesContainer>
     </Container>
   );
 }

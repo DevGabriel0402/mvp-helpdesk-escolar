@@ -13,7 +13,6 @@ import {
     excluirChamadoAdmin
 } from "../../../servicos/firebase/chamadosServico";
 import { usarAuth } from "../../../contextos/AuthContexto";
-import { usarConfiguracoes } from "../../../contextos/ConfiguracoesContexto";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
 
 const Grid = styled.div`
@@ -76,14 +75,24 @@ const StatusBadge = styled.span`
   font-weight: 600;
   text-transform: capitalize;
   
-  background: ${({ $status, $config }) => {
-        const s = $config?.find(x => x.id === $status);
-        return s ? `${s.color}26` : "rgba(255, 255, 255, 0.1)";
+  background: ${({ $status }) => {
+        switch ($status) {
+            case "aberto": return "rgba(50, 200, 255, 0.15)";
+            case "andamento": return "rgba(255, 200, 50, 0.15)";
+            case "prodabel": return "rgba(155, 89, 182, 0.15)"; // Purple
+            case "resolvido": return "rgba(50, 255, 100, 0.15)";
+            default: return "rgba(255, 255, 255, 0.1)";
+        }
     }};
 
-  color: ${({ $status, $config }) => {
-        const s = $config?.find(x => x.id === $status);
-        return s ? s.color : "#ccc";
+  color: ${({ $status }) => {
+        switch ($status) {
+            case "aberto": return "#32c8ff";
+            case "andamento": return "#ffc832";
+            case "prodabel": return "#9b59b6"; // Purple
+            case "resolvido": return "#32ff64";
+            default: return "#ccc";
+        }
     }};
 `;
 
@@ -94,14 +103,22 @@ const PrioridadeBadge = styled.span`
   font-weight: 600;
   text-transform: capitalize;
   
-  background: ${({ $prio, $config }) => {
-        const p = $config?.find(x => x.id === $prio);
-        return p ? `${p.color}26` : "rgba(255, 255, 255, 0.1)";
+  background: ${({ $prio }) => {
+        switch ($prio) {
+            case "alta": return "rgba(255, 77, 77, 0.15)";
+            case "media": return "rgba(255, 200, 50, 0.15)";
+            case "baixa": return "rgba(50, 200, 255, 0.15)";
+            default: return "rgba(255, 255, 255, 0.1)";
+        }
     }};
 
-  color: ${({ $prio, $config }) => {
-        const p = $config?.find(x => x.id === $prio);
-        return p ? p.color : "#ccc";
+  color: ${({ $prio }) => {
+        switch ($prio) {
+            case "alta": return "#ff4d4d";
+            case "media": return "#ffc832";
+            case "baixa": return "#32c8ff";
+            default: return "#ccc";
+        }
     }};
 `;
 
@@ -227,7 +244,6 @@ const BotaoNota = styled.button`
 
 function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
     const theme = useTheme();
-    const { configUI } = usarConfiguracoes();
     const [status, setStatus] = useState(statusAtual || "aberto");
     const [nota, setNota] = useState("");
 
@@ -297,11 +313,12 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
                 <SelectPersonalizado
                     valor={status}
                     onChange={(val) => setStatus(val)}
-                    opcoes={configUI.status?.map(s => ({
-                        value: s.id,
-                        label: s.label,
-                        icone: <FaCircle color={s.color} style={{ fontSize: '0.6rem' }} />
-                    })) || []}
+                    opcoes={[
+                        { value: "aberto", label: "Recebido", icone: <FaExclamationCircle color="#32c8ff" /> },
+                        { value: "andamento", label: "Em andamento", icone: <FaPlayCircle color="#ffc832" /> },
+                        { value: "prodabel", label: "Encaminhado para Prodabel", icone: <FaExternalLinkAlt color="#9b59b6" /> },
+                        { value: "resolvido", label: "Resolvido", icone: <FaCheckCircle color="#32ff64" /> }
+                    ]}
                     placeholder="Selecione o status"
                 />
             </div>
@@ -376,10 +393,6 @@ export default function DetalhesDoChamado() {
     const { id } = useParams();
     const navegar = useNavigate();
     const { perfil, eAdmin, uid } = usarAuth();
-    const { configUI } = usarConfiguracoes();
-
-    const traduzirStatus = (id) => configUI.status?.find(s => s.id === id)?.label || id;
-    const traduzirPrioridade = (id) => configUI.prioridades?.find(p => p.id === id)?.label || id;
 
     const [chamado, setChamado] = useState(null);
     const [atualizacoes, setAtualizacoes] = useState([]);
@@ -482,10 +495,10 @@ export default function DetalhesDoChamado() {
                         <FaArrowLeft />
                     </BotaoVoltar>
                     <CodigoChamado>{chamado?.codigoChamado || `#${chamado?.numeroChamado || id}`}</CodigoChamado>
-                    <StatusBadge $status={ultimoStatus} $config={configUI.status}>
-                        {traduzirStatus(ultimoStatus)}
+                    <StatusBadge $status={ultimoStatus}>
+                        {ultimoStatus === 'andamento' ? 'Em Progresso' : (ultimoStatus === 'aberto' ? 'Recebido' : ultimoStatus)}
                     </StatusBadge>
-                    <PrioridadeBadge $prio={chamado?.prioridade} $config={configUI.prioridades}>{traduzirPrioridade(chamado?.prioridade)}</PrioridadeBadge>
+                    <PrioridadeBadge $prio={chamado?.prioridade}>{chamado?.prioridade || '-'}</PrioridadeBadge>
                 </CabecalhoChamado>
 
                 <Titulo>{chamado?.titulo || 'Carregando...'}</Titulo>
@@ -525,14 +538,22 @@ export default function DetalhesDoChamado() {
                                             background: (() => {
                                                 if (item.tipo === 'criacao') return 'rgba(50, 200, 255, 0.1)';
                                                 if (item.tipo === 'nota') return 'rgba(255, 200, 50, 0.1)';
-                                                const s = configUI.status?.find(x => x.id === item.para);
-                                                return s ? `${s.color}1a` : 'rgba(50, 200, 255, 0.1)';
+                                                switch (item.para) {
+                                                    case 'prodabel': return 'rgba(155, 89, 182, 0.1)';
+                                                    case 'resolvido': return 'rgba(50, 255, 100, 0.1)';
+                                                    case 'andamento': return 'rgba(255, 200, 50, 0.1)';
+                                                    default: return 'rgba(50, 200, 255, 0.1)';
+                                                }
                                             })(),
                                             color: (() => {
                                                 if (item.tipo === 'criacao') return '#32c8ff';
                                                 if (item.tipo === 'nota') return '#ffc832';
-                                                const s = configUI.status?.find(x => x.id === item.para);
-                                                return s ? s.color : '#32c8ff';
+                                                switch (item.para) {
+                                                    case 'prodabel': return '#9b59b6';
+                                                    case 'resolvido': return '#32ff64';
+                                                    case 'andamento': return '#ffc832';
+                                                    default: return '#32c8ff';
+                                                }
                                             })(),
                                             display: 'flex',
                                             alignItems: 'center',
@@ -565,7 +586,9 @@ export default function DetalhesDoChamado() {
 
                                             {item.tipo === "mudanca_status" && (
                                                 <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                                                    {traduzirStatus(item.de)} → <strong>{traduzirStatus(item.para)}</strong>
+                                                    {item.de === 'aberto' ? 'Recebido' : item.de} → <strong>
+                                                        {item.para === 'aberto' ? 'Recebido' : (item.para === 'prodabel' ? 'Prodabel' : item.para)}
+                                                    </strong>
                                                 </div>
                                             )}
                                             {item.texto && <div style={{ fontSize: '0.9rem', opacity: 0.9, lineHeight: '1.5', marginTop: 4 }}>{item.texto}</div>}

@@ -1,36 +1,30 @@
-import { createContext, useContext, useMemo } from "react";
-import { usarConfiguracoes } from "./ConfiguracoesContexto";
-import { criarTema } from "../estilos/temaDinamico";
+import { createContext, useContext, useEffect, useState } from "react";
+import { temas } from "../estilos/tema";
 
 const TemaContexto = createContext({});
 
 export function ProvedorTema({ children }) {
-    const { configUI, atualizarConfig } = usarConfiguracoes();
+  const [modo, setModo] = useState(() => {
+    return localStorage.getItem("tema_preferido") || "escuro";
+  });
 
-    function alternarTema() {
-        if (!configUI) return;
-        const atual = configUI.preferencias?.modo || "escuro";
-        const novo = atual === "escuro" ? "claro" : "escuro";
+  useEffect(() => {
+    localStorage.setItem("tema_preferido", modo);
+  }, [modo]);
 
-        atualizarConfig({
-            ...configUI,
-            preferencias: {
-                ...configUI.preferencias,
-                modo: novo
-            }
-        });
-    }
+  function alternarTema() {
+    setModo((atual) => (atual === "escuro" ? "claro" : "escuro"));
+  }
 
-    const modo = configUI?.preferencias?.modo || "escuro";
-    const temaAtual = useMemo(() => criarTema(configUI), [configUI]);
+  const temaAtual = temas[modo];
 
-    return (
-        <TemaContexto.Provider value={{ modo, alternarTema, temaAtual }}>
-            {children}
-        </TemaContexto.Provider>
-    );
+  return (
+    <TemaContexto.Provider value={{ modo, alternarTema, temaAtual }}>
+      {children}
+    </TemaContexto.Provider>
+  );
 }
 
 export function usarTema() {
-    return useContext(TemaContexto);
+  return useContext(TemaContexto);
 }

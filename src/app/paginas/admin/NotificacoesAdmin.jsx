@@ -35,7 +35,7 @@ const Botao = styled.button`
   padding: 0 12px;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.cores.borda};
-  background: rgba(255,255,255,0.08);
+  background: rgba(59, 130, 246, 0.1);
   color: ${({ theme }) => theme.cores.texto};
   cursor: pointer;
   display: inline-flex;
@@ -48,6 +48,7 @@ const Botao = styled.button`
     background: ${({ theme }) => theme.cores.destaque};
     border-color: ${({ theme }) => theme.cores.destaque};
     color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
   }
 `;
 
@@ -56,14 +57,16 @@ const Item = styled.button`
   width: 100%;
   border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.cores.borda};
-  background: ${({ $lida }) => ($lida ? "rgba(0,0,0,0.05)" : "rgba(50, 200, 255, 0.1)")};
+  background: ${({ $lida, theme }) =>
+    $lida ? "transparent" : `rgba(59, 130, 246, 0.1)`};
   color: ${({ theme }) => theme.cores.texto};
   padding: 16px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 
   &:hover {
     background: ${({ theme }) => theme.cores.vidroForte};
+    border-color: ${({ theme }) => theme.cores.destaque};
   }
 `;
 
@@ -101,13 +104,17 @@ export default function NotificacoesAdmin() {
       <Cartao>
         <Titulo>Notificações</Titulo>
         <Acoes>
-          <Botao onClick={marcarTudoComoLido}><FaCheck /> Marcar tudo como lido</Botao>
-          <Botao onClick={limparTudo}><FaTrash /> Limpar</Botao>
+          <Botao onClick={marcarTudoComoLido}>
+            <FaCheck /> Marcar tudo como lido
+          </Botao>
+          <Botao onClick={limparTudo}>
+            <FaTrash /> Limpar
+          </Botao>
         </Acoes>
       </Cartao>
 
       {notificacoes.length === 0 && (
-        <Cartao style={{ textAlign: 'center', opacity: 0.7, padding: 30 }}>
+        <Cartao style={{ textAlign: "center", opacity: 0.7, padding: 30 }}>
           Nenhuma notificação nova.
         </Cartao>
       )}
@@ -122,8 +129,12 @@ export default function NotificacoesAdmin() {
           }}
         >
           <Linha1>
-            <span style={{ color: n.lida ? 'inherit' : '#32c8ff' }}>{n.codigoChamado || "Novo chamado"}</span>
-            <span style={{ opacity: 0.7, fontSize: 12, fontWeight: 400 }}>{formatarMs(n.criadoMs)}</span>
+            <span style={{ color: n.lida ? "inherit" : "#3B82F6", fontWeight: 700 }}>
+              {n.codigoChamado || "Novo chamado"}
+            </span>
+            <span style={{ opacity: 0.7, fontSize: 12, fontWeight: 400 }}>
+              {formatarMs(n.criadoMs)}
+            </span>
           </Linha1>
           <Linha2>
             <b style={{ fontWeight: 600 }}>{n.titulo}</b>

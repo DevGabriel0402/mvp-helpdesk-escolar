@@ -1,7 +1,6 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { FaEye } from "react-icons/fa";
-import { usarConfiguracoes } from "../../contextos/ConfiguracoesContexto";
 
 const ListaContainer = styled.div`
   display: flex;
@@ -60,14 +59,24 @@ const StatusBadge = styled.span`
   font-weight: 600;
   text-transform: capitalize;
   
-  background: ${({ $status, $config }) => {
-    const s = $config?.find(x => x.id === $status);
-    return s ? `${s.color}26` : "rgba(255, 255, 255, 0.1)"; // 26 is ~15% opacity in hex
+  background: ${({ $status }) => {
+    switch ($status) {
+      case "aberto": return "rgba(50, 200, 255, 0.15)";
+      case "andamento": return "rgba(255, 200, 50, 0.15)";
+      case "prodabel": return "rgba(155, 89, 182, 0.15)"; // Purple
+      case "resolvido": return "rgba(50, 255, 100, 0.15)";
+      default: return "rgba(255, 255, 255, 0.1)";
+    }
   }};
 
-  color: ${({ $status, $config }) => {
-    const s = $config?.find(x => x.id === $status);
-    return s ? s.color : "#ccc";
+  color: ${({ $status }) => {
+    switch ($status) {
+      case "aberto": return "#32c8ff";
+      case "andamento": return "#ffc832";
+      case "prodabel": return "#9b59b6"; // Purple
+      case "resolvido": return "#32ff64";
+      default: return "#ccc";
+    }
   }};
 `;
 
@@ -80,14 +89,24 @@ const PrioridadeBadge = styled.span`
   font-weight: 600;
   text-transform: capitalize;
   
-  background: ${({ $prio, $config }) => {
-    const p = $config?.find(x => x.id === $prio);
-    return p ? `${p.color}26` : "rgba(255, 255, 255, 0.1)";
+  background: ${({ $prio }) => {
+    switch ($prio) {
+      case "urgente": return "rgba(255, 77, 77, 0.15)"; // Vermelho
+      case "alta": return "rgba(255, 153, 51, 0.15)"; // Laranja
+      case "normal": return "rgba(50, 255, 100, 0.15)"; // Verde
+      case "baixa": return "rgba(153, 153, 153, 0.15)"; // Cinza
+      default: return "rgba(255, 255, 255, 0.1)";
+    }
   }};
 
-  color: ${({ $prio, $config }) => {
-    const p = $config?.find(x => x.id === $prio);
-    return p ? p.color : "#ccc";
+  color: ${({ $prio }) => {
+    switch ($prio) {
+      case "urgente": return "#ff4d4d";
+      case "alta": return "#FF9933";
+      case "normal": return "#32ff64";
+      case "baixa": return "#999999";
+      default: return "#ccc";
+    }
   }};
 `;
 
@@ -151,12 +170,27 @@ function formatarData(data) {
   return data.toDate().toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function traduzirStatus(status) {
+  switch (status) {
+    case "aberto": return "Recebido";
+    case "andamento": return "Em Progresso";
+    case "prodabel": return "Encaminhado para Prodabel";
+    case "resolvido": return "Resolvido";
+    default: return status;
+  }
+}
+
+function traduzirPrioridade(prio) {
+  switch (prio) {
+    case "alta": return "Alta";
+    case "media": return "Média";
+    case "baixa": return "Baixa";
+    default: return prio;
+  }
+}
+
 export default function TabelaChamados({ chamados }) {
   const navegar = useNavigate();
-  const { configUI } = usarConfiguracoes();
-
-  const traduzirStatus = (id) => configUI.status?.find(s => s.id === id)?.label || id;
-  const traduzirPrioridade = (id) => configUI.prioridades?.find(p => p.id === id)?.label || id;
 
   if (!chamados || chamados.length === 0) {
     return (
@@ -173,8 +207,8 @@ export default function TabelaChamados({ chamados }) {
           <CardConteudo>
             <CardHeader>
               <CodigoChamado>{c.codigoChamado || `#${c.numeroChamado}`}</CodigoChamado>
-              <StatusBadge $status={c.status} $config={configUI.status}>{traduzirStatus(c.status)}</StatusBadge>
-              <PrioridadeBadge $prio={c.prioridade} $config={configUI.prioridades}>{traduzirPrioridade(c.prioridade)}</PrioridadeBadge>
+              <StatusBadge $status={c.status}>{traduzirStatus(c.status)}</StatusBadge>
+              <PrioridadeBadge $prio={c.prioridade}>{traduzirPrioridade(c.prioridade)}</PrioridadeBadge>
             </CardHeader>
             <Titulo>{c.titulo}</Titulo>
             <Meta>

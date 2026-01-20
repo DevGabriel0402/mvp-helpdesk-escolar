@@ -35,6 +35,15 @@ service cloud.firestore {
 
     function podeLerChamado(dadosChamado) {
       return (eAdmin() && escolaPermitida(dadosChamado.escolaId))
+
+        // ✅ visitante (anonimo) pode ler chamados da escola_padrao
+        // Permite que visitante acompanhe o chamado pelo número mesmo após fechar o navegador
+        || (eAnonimo()
+            && dadosChamado.escolaId == "escola_padrao"
+            && dadosChamado.criadoPorTipo == "visitante"
+        )
+
+        // ✅ continua permitindo o dono ler (caso seja necessario)
         || (estaLogado() && dadosChamado.criadoPorUid == uid());
     }
 
