@@ -19,6 +19,7 @@ import {
   FaExternalLinkAlt,
   FaFlag,
   FaSave,
+  FaFilePdf,
 } from "react-icons/fa";
 import { Cartao } from "../../../componentes/ui/Cartao";
 import {
@@ -31,6 +32,8 @@ import {
   buscarChamadoPorId,
 } from "../../../servicos/firebase/chamadosServico";
 import { useAuth } from "../../../contextos/AuthContexto";
+import { usePainelPublico } from "../../../hooks/usePainelPublico";
+import { gerarPdfChamado } from "../../../utils/gerarPdfChamado";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
 
 const Grid = styled.div`
@@ -76,6 +79,35 @@ const BotaoVoltar = styled.button`
   &:hover {
     background: ${({ theme }) => theme.cores.borda};
     color: ${({ theme }) => theme.cores.texto};
+  }
+`;
+
+const BotaoAcaoHeader = styled.button`
+  background: ${({ theme }) => theme.cores.vidroForte};
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  color: ${({ theme }) => theme.cores.texto};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  margin-left: auto;
+
+  &:hover {
+    background: ${({ theme }) => theme.cores.destaque};
+    border-color: ${({ theme }) => theme.cores.destaque};
+    color: white;
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+    margin-left: 0;
+    order: 10;
   }
 `;
 
@@ -614,6 +646,7 @@ export default function DetalhesDoChamado() {
   const { id } = useParams();
   const navegar = useNavigate();
   const { perfil, eAdmin, uid } = useAuth();
+  const painel = usePainelPublico(perfil?.escolaId || "escola_padrao");
 
   const [chamado, setChamado] = useState(null);
   const [atualizacoes, setAtualizacoes] = useState([]);
@@ -730,6 +763,14 @@ export default function DetalhesDoChamado() {
           <PrioridadeBadge $prio={chamado?.prioridade}>
             {chamado?.prioridade || "-"}
           </PrioridadeBadge>
+
+          <BotaoAcaoHeader
+            onClick={() => gerarPdfChamado({ chamado, painel, atualizacoes, comentarios })}
+            title="Imprimir PDF"
+          >
+            <FaFilePdf />
+            Imprimir
+          </BotaoAcaoHeader>
         </CabecalhoChamado>
 
         <Titulo>{chamado?.titulo || "Carregando..."}</Titulo>
