@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "../servicos/firebase/firebaseConfig";
 import { usarAuth } from "./AuthContexto";
@@ -37,6 +37,12 @@ export function ProvedorNotificacoes({ children }) {
 
   const [notificacoes, setNotificacoes] = useState([]);
   const [ultimoVistoMs, setUltimoVistoMs] = useState(0);
+  const ultimoVistoRef = useRef(0);
+
+  // Mantém o ref sincronizado com o state
+  useEffect(() => {
+    ultimoVistoRef.current = ultimoVistoMs;
+  }, [ultimoVistoMs]);
 
   // ✅ badge
   const naoLidas = useMemo(
@@ -105,7 +111,8 @@ export function ProvedorNotificacoes({ children }) {
         const criadoEm = d.criadoEm;
         const criadoMs = criadoEm?.toMillis ? criadoEm.toMillis() : 0;
 
-        if (criadoMs <= ultimoVistoMs) return;
+        // Usa o ref para ter sempre o valor mais atualizado
+        if (criadoMs <= ultimoVistoRef.current) return;
 
         const chamadoId = change.doc.id;
         if (jaTem.has(chamadoId)) return;
