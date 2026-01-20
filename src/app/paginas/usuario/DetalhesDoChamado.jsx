@@ -270,9 +270,7 @@ function DefinirPrioridadeInline({
 }) {
   const [prioridade, setPrioridade] = useState(prioridadeAtual || "normal");
   const [salvando, setSalvando] = useState(false);
-  const [definida, setDefinida] = useState(
-    prioridadeAtual && prioridadeAtual !== "normal",
-  );
+  const [definida, setDefinida] = useState(!!prioridadeAtual);
 
   async function salvar() {
     setSalvando(true);
@@ -364,7 +362,7 @@ function DefinirPrioridadeInline({
           gap: 4,
         }}
       >
-        <FaCheck /> {salvando ? "..." : "OK"}
+        <FaCheck /> {salvando ? "..." : "Confirmar"}
       </button>
     </div>
   );
