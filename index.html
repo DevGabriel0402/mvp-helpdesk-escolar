@@ -2,21 +2,138 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Configurações básicas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- SEO - Título e Descrição -->
+    <title>Helpdesk EMSLC | Sistema de Suporte de TI - Abertura de Chamados</title>
+    <meta
+      name="title"
+      content="Helpdesk EMSLC | Sistema de Suporte de TI - Abertura de Chamados"
+    />
+    <meta
+      name="description"
+      content="Sistema de abertura e gerenciamento de chamados de suporte técnico para a EMSLC. Abra chamados para problemas com computadores, projetores, programas, rede e internet. Acompanhe o status em tempo real."
+    />
+    <meta
+      name="keywords"
+      content="helpdesk, suporte técnico, TI, chamados, escola, EMSLC, assistência técnica, computador, projetor, rede, internet, manutenção"
+    />
+    <meta name="author" content="EMSLC - Suporte de TI" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="pt-BR" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://emslchelp.vercel.app" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://emslchelp.vercel.app" />
+    <meta property="og:title" content="Helpdesk EMSLC | Sistema de Suporte de TI" />
+    <meta
+      property="og:description"
+      content="Abra chamados de suporte técnico para a EMSLC. Sistema moderno para gerenciamento de problemas com computadores, projetores, programas e rede."
+    />
+    <meta
+      property="og:image"
+      content="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+    />
+    <meta property="og:image:alt" content="Helpdesk EMSLC - Sistema de Suporte de TI" />
+    <meta property="og:site_name" content="Helpdesk EMSLC" />
+    <meta property="og:locale" content="pt_BR" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://emslchelp.vercel.app" />
+    <meta name="twitter:title" content="Helpdesk EMSLC | Sistema de Suporte de TI" />
+    <meta
+      name="twitter:description"
+      content="Abra chamados de suporte técnico para a EMSLC. Sistema moderno para gerenciamento de problemas com computadores, projetores, programas e rede."
+    />
+    <meta
+      name="twitter:image"
+      content="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+    />
+
+    <!-- PWA / Mobile -->
     <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0a0b0e" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Helpdesk EMSLC" />
+    <meta name="application-name" content="Helpdesk EMSLC" />
+    <meta name="msapplication-TileColor" content="#0a0b0e" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <!-- Favicon e Ícones -->
     <link
       rel="icon"
-      href="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_256,h_256,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
-      type="image/svg+xml"
+      href="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_32,h_32,q_auto,f_png/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+      type="image/png"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      href="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_16,h_16,q_auto,f_png/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+      type="image/png"
+      sizes="16x16"
     />
     <link
       rel="apple-touch-icon"
-      href="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_256,h_256,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+      href="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_180,h_180,q_auto,f_png/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+      sizes="180x180"
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0b0e" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Suporte TI</title>
+    <link
+      rel="apple-touch-icon"
+      href="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_152,h_152,q_auto,f_png/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+      sizes="152x152"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_120,h_120,q_auto,f_png/helpdesk/perfis/it9ujmoutxkxjuxdnwip"
+      sizes="120x120"
+    />
+
+    <!-- Preconnect para performance -->
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://www.googleapis.com" />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+
+    <!-- Schema.org JSON-LD para SEO estruturado -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Helpdesk EMSLC",
+        "alternateName": "Sistema de Suporte TI EMSLC",
+        "url": "https://emslchelp.vercel.app",
+        "description": "Sistema de abertura e gerenciamento de chamados de suporte técnico para a EMSLC. Abra chamados para problemas com computadores, projetores, programas, rede e internet.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "BRL"
+        },
+        "featureList": [
+          "Abertura de chamados técnicos",
+          "Acompanhamento em tempo real",
+          "Notificações automáticas",
+          "Histórico de chamados",
+          "Painel administrativo",
+          "Tema claro e escuro",
+          "PWA - Instalável"
+        ],
+        "screenshot": "https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip",
+        "softwareVersion": "1.0.0",
+        "inLanguage": "pt-BR"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
