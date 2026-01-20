@@ -1,7 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 
+// ✅ Se voce ja tem esse config no arquivo, mantenha o seu.
+// Se voce usa .env, mantenha assim. Se nao usa, pode deixar hardcoded.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -13,22 +19,17 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
+// AUTH
 export const auth = getAuth(app);
 
-// ✅ Manter admin logado até sair manualmente
+// ✅ garante que o admin/usuario fica logado ate sair
 setPersistence(auth, browserLocalPersistence).catch(() => {
-  // Se der erro, o Firebase usa a persistência padrão do browser
+  // se falhar, usa persistencia padrao do browser (ok)
 });
 
-export const db = getFirestore(app);
-
-// ✅ Cache offline do Firestore (IndexedDB)
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === "failed-precondition") {
-    // Provavelmente múltiplas abas abertas
-    console.warn("Firestore persistence failed: multiple tabs open");
-  } else if (err.code === "unimplemented") {
-    // Browser não suporta
-    console.warn("Firestore persistence not supported");
-  }
+// FIRESTORE com cache persistente (nova API - sem deprecação)
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
 });

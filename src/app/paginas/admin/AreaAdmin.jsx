@@ -5,6 +5,7 @@ import { ouvirChamadosDaEscola } from "../../../servicos/firebase/chamadosServic
 import { Cartao } from "../../../componentes/ui/Cartao";
 import TabelaChamados from "../../../componentes/admin/TabelaChamados";
 import Skeleton, { SkeletonRow } from "../../../componentes/ui/Skeleton";
+import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
 import { FaTicketAlt, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 
 const Container = styled.div`
@@ -61,97 +62,155 @@ const StatLabel = styled.span`
   color: ${({ theme }) => theme.cores.textoFraco};
 `;
 
+const FiltroWrapper = styled.div`
+  width: 180px;
+
+  @media (max-width: 600px) {
+    width: 100%;
+  }
+`;
+
+const ListaHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+`;
+
+const OPCOES_FILTRO = [
+  { value: "todos", label: "Todos" },
+  { value: "pendentes", label: "Pendentes" },
+  { value: "concluido", label: "Concluídos" },
+];
+
 export default function AreaAdmin() {
-    const { perfil, eAdmin } = useAuth();
-    const [chamados, setChamados] = useState(null); // null = loading, [] = vazio
+  const { perfil, eAdmin } = useAuth();
+  const [chamados, setChamados] = useState(null); // null = loading, [] = vazio
+  const [filtro, setFiltro] = useState("todos");
 
-    useEffect(() => {
-        if (!perfil?.escolaId) return;
+  useEffect(() => {
+    if (!perfil?.escolaId) return;
 
-        const unsubscribe = ouvirChamadosDaEscola(perfil.escolaId, (lista) => {
-            setChamados(lista);
-        });
+    const unsubscribe = ouvirChamadosDaEscola(perfil.escolaId, (lista) => {
+      setChamados(lista);
+    });
 
-        return () => unsubscribe();
-    }, [perfil?.escolaId]);
+    return () => unsubscribe();
+  }, [perfil?.escolaId]);
 
-    const carregando = chamados === null;
+  const carregando = chamados === null;
 
-    const stats = useMemo(() => {
-        if (!chamados) return { total: 0, abertos: 0, resolvidos: 0 };
-        return {
-            total: chamados.length,
-            abertos: chamados.filter(c => c.status === "aberto" || c.status === "andamento").length,
-            resolvidos: chamados.filter(c => c.status === "resolvido" || c.status === "prodabel").length,
-        };
-    }, [chamados]);
+  const stats = useMemo(() => {
+    if (!chamados) return { total: 0, abertos: 0, resolvidos: 0 };
+    return {
+      total: chamados.length,
+      abertos: chamados.filter((c) => c.status === "aberto" || c.status === "andamento")
+        .length,
+      resolvidos: chamados.filter(
+        (c) => c.status === "resolvido" || c.status === "prodabel",
+      ).length,
+    };
+  }, [chamados]);
 
-    if (!eAdmin) {
-        return <p>Acesso negado.</p>;
+  // Filtra chamados baseado na seleção
+  const chamadosFiltrados = useMemo(() => {
+    if (!chamados) return [];
+    if (filtro === "todos") return chamados;
+
+    if (filtro === "pendentes") {
+      return chamados.filter((c) =>
+        ["aberto", "andamento", "prodabel"].includes(c.status),
+      );
     }
 
-    return (
-        <Container>
-            <Header>
-                <div>
-                    <h2 style={{ margin: 0 }}>Dashboard</h2>
-                    <p style={{ margin: "4px 0 0 0", opacity: 0.6 }}>
-                        Bem-vindo, {perfil?.nome?.split(' ')[0]}.
-                    </p>
-                </div>
-            </Header>
+    if (filtro === "concluido") {
+      return chamados.filter((c) => c.status === "resolvido");
+    }
 
-            <StatsGrid>
-                {carregando ? (
-                    <>
-                        <Skeleton variant="stat" />
-                        <Skeleton variant="stat" />
-                        <Skeleton variant="stat" />
-                    </>
-                ) : (
-                    <>
-                        <StatCard>
-                            <StatIcon $bg="rgba(50, 200, 255, 0.15)" $color="#32c8ff">
-                                <FaTicketAlt />
-                            </StatIcon>
-                            <StatInfo>
-                                <StatValue>{stats.total}</StatValue>
-                                <StatLabel>Total de Chamados</StatLabel>
-                            </StatInfo>
-                        </StatCard>
+    return chamados;
+  }, [chamados, filtro]);
 
-                        <StatCard>
-                            <StatIcon $bg="rgba(255, 200, 50, 0.15)" $color="#ffc832">
-                                <FaExclamationCircle />
-                            </StatIcon>
-                            <StatInfo>
-                                <StatValue>{stats.abertos}</StatValue>
-                                <StatLabel>Pendentes</StatLabel>
-                            </StatInfo>
-                        </StatCard>
+  if (!eAdmin) {
+    return <p>Acesso negado.</p>;
+  }
 
-                        <StatCard>
-                            <StatIcon $bg="rgba(50, 255, 100, 0.15)" $color="#32ff64">
-                                <FaCheckCircle />
-                            </StatIcon>
-                            <StatInfo>
-                                <StatValue>{stats.resolvidos}</StatValue>
-                                <StatLabel>Resolvidos</StatLabel>
-                            </StatInfo>
-                        </StatCard>
-                    </>
-                )}
-            </StatsGrid>
+  return (
+    <Container>
+      <Header>
+        <div>
+          <h2 style={{ margin: 0 }}>Dashboard</h2>
+          <p style={{ margin: "4px 0 0 0", opacity: 0.6 }}>
+            Bem-vindo, {perfil?.nome?.split(" ")[0]}.
+          </p>
+        </div>
+      </Header>
 
-            <Cartao style={{ padding: 0, overflow: 'hidden' }}>
-                {carregando ? (
-                    <div style={{ padding: 16 }}>
-                        <Skeleton variant="row" count={5} />
-                    </div>
-                ) : (
-                    <TabelaChamados chamados={chamados} />
-                )}
-            </Cartao>
-        </Container>
-    );
+      <StatsGrid>
+        {carregando ? (
+          <>
+            <Skeleton variant="stat" />
+            <Skeleton variant="stat" />
+            <Skeleton variant="stat" />
+          </>
+        ) : (
+          <>
+            <StatCard>
+              <StatIcon $bg="rgba(50, 200, 255, 0.15)" $color="#32c8ff">
+                <FaTicketAlt />
+              </StatIcon>
+              <StatInfo>
+                <StatValue>{stats.total}</StatValue>
+                <StatLabel>Total de Chamados</StatLabel>
+              </StatInfo>
+            </StatCard>
+
+            <StatCard>
+              <StatIcon $bg="rgba(255, 200, 50, 0.15)" $color="#ffc832">
+                <FaExclamationCircle />
+              </StatIcon>
+              <StatInfo>
+                <StatValue>{stats.abertos}</StatValue>
+                <StatLabel>Pendentes</StatLabel>
+              </StatInfo>
+            </StatCard>
+
+            <StatCard>
+              <StatIcon $bg="rgba(50, 255, 100, 0.15)" $color="#32ff64">
+                <FaCheckCircle />
+              </StatIcon>
+              <StatInfo>
+                <StatValue>{stats.resolvidos}</StatValue>
+                <StatLabel>Resolvidos</StatLabel>
+              </StatInfo>
+            </StatCard>
+          </>
+        )}
+      </StatsGrid>
+
+      <Cartao style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "16px 16px 0 16px" }}>
+          <ListaHeader>
+            <h3 style={{ margin: 0 }}>Lista de Chamados</h3>
+            <FiltroWrapper>
+              <SelectPersonalizado
+                valor={filtro}
+                onChange={setFiltro}
+                opcoes={OPCOES_FILTRO}
+                placeholder="Filtrar..."
+              />
+            </FiltroWrapper>
+          </ListaHeader>
+        </div>
+        {carregando ? (
+          <div style={{ padding: 16 }}>
+            <Skeleton variant="row" count={5} />
+          </div>
+        ) : (
+          <TabelaChamados chamados={chamadosFiltrados} />
+        )}
+      </Cartao>
+    </Container>
+  );
 }
