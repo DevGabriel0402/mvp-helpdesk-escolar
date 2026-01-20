@@ -1,21 +1,27 @@
 {
-  "name": "Suporte TI",
-  "short_name": "Suporte",
+  "name": "Helpdesk",
+  "short_name": "Helpdesk",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0b0e",
   "theme_color": "#0a0b0e",
   "icons": [
     {
       "src": "https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_256,h_256,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
       "src": "https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_256,h_256,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_256,h_256,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
