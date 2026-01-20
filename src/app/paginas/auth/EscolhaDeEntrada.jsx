@@ -45,7 +45,7 @@ const BtnContent = styled.div`
 
 export default function EscolhaDeEntrada() {
   const navegar = useNavigate();
-  const { painel } = usePainelPublico();
+  const painel = usePainelPublico();
 
   async function iniciarComoVisitante() {
     try {
@@ -58,9 +58,11 @@ export default function EscolhaDeEntrada() {
     }
   }
 
+  const logoUrl = painel?.logo?.url256 || painel?.logoUrl;
+
   return (
     <Caixa>
-      {painel?.logoUrl && <LogoImg src={painel.logoUrl} alt="Logo" />}
+      {logoUrl && <LogoImg src={logoUrl} alt="Logo" />}
       <h1 style={{ margin: "0 0 4px 0" }}>{painel?.nomePainel || "Helpdesk"}</h1>
       <Texto>Bem-vindo! Escolha como deseja acessar.</Texto>
 
