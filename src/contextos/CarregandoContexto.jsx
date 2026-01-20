@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
 import styled, { keyframes } from "styled-components";
+import { MdSupportAgent } from "react-icons/md";
 
 const CarregandoContexto = createContext(null);
 
@@ -40,14 +41,16 @@ export function useCarregando() {
 function TelaCarregando() {
   return (
     <Overlay>
-      <Spinner />
+      <IconeWrap>
+        <MdSupportAgent size={48} />
+      </IconeWrap>
     </Overlay>
   );
 }
 
-const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+const pulse = keyframes`
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
 `;
 
 const Overlay = styled.div`
@@ -59,11 +62,7 @@ const Overlay = styled.div`
   pointer-events: none;
 `;
 
-const Spinner = styled.div`
-  width: 40px;
-  height: 40px;
-  border: 3px solid ${({ theme }) => theme.cores.texto}20;
-  border-top-color: ${({ theme }) => theme.cores.primaria};
-  border-radius: 50%;
-  animation: ${spin} 0.8s linear infinite;
+const IconeWrap = styled.div`
+  color: ${({ theme }) => theme.cores.primaria};
+  animation: ${pulse} 1.2s ease-in-out infinite;
 `;

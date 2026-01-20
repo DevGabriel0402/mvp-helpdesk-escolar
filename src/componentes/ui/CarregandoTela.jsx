@@ -1,24 +1,28 @@
-import styled from "styled-components";
-import { Cartao } from "./Cartao";
+import styled, { keyframes } from "styled-components";
+import { MdSupportAgent } from "react-icons/md";
+
+const pulse = keyframes`
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
+`;
 
 const Centro = styled.div`
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 24px;
 `;
 
-const Caixa = styled(Cartao)`
-  padding: 18px;
-  width: min(420px, 100%);
-  text-align: center;
-  color: ${({ theme }) => theme.cores.textoFraco};
+const IconeWrap = styled.div`
+  color: ${({ theme }) => theme.cores.primaria};
+  animation: ${pulse} 1.2s ease-in-out infinite;
 `;
 
 export default function CarregandoTela() {
   return (
     <Centro>
-      <Caixa>Carregando...</Caixa>
+      <IconeWrap>
+        <MdSupportAgent size={48} />
+      </IconeWrap>
     </Centro>
   );
 }
