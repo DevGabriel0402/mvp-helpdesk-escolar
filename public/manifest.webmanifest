@@ -1,8 +1,8 @@
 {
   "name": "Helpdesk",
   "short_name": "Helpdesk",
-  "start_url": "https://emslchelp.vercel.app/",
-  "scope": "https://emslchelp.vercel.app/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0b0e",
   "theme_color": "#0a0b0e",
