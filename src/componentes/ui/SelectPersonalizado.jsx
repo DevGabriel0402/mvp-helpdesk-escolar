@@ -45,8 +45,8 @@ const Menu = styled(Cartao)`
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(100% + 8px);
-  z-index: 50;
+  ${({ $direcao }) => ($direcao === "cima" ? "bottom: calc(100% + 8px);" : "top: calc(100% + 8px);")}
+  z-index: 9999;
 
   max-height: 260px;
   overflow: auto;
@@ -105,6 +105,7 @@ export default function SelectPersonalizado({
     opcoes = [],
     placeholder = "Selecione...",
     desabilitado = false,
+    direcao = "baixo", // "baixo" ou "cima"
 }) {
     const [aberto, setAberto] = useState(false);
     const refWrapper = useRef(null);
@@ -147,7 +148,7 @@ export default function SelectPersonalizado({
             </BotaoSelect>
 
             {aberto && (
-                <Menu role="listbox">
+                <Menu role="listbox" $direcao={direcao}>
                     {opcoes.map((o) => {
                         const ativo = o.value === valor;
                         return (

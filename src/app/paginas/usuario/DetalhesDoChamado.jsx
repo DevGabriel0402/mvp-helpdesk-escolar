@@ -196,7 +196,6 @@ const Lista = styled.div`
   gap: 1px;
   background: ${({ theme }) => theme.cores.borda};
   border-radius: 8px;
-  overflow: hidden;
 `;
 
 const Item = styled.div`
@@ -268,11 +267,15 @@ function DefinirPrioridadeInline({
   prioridadeAtual,
   onDefinida,
 }) {
-  const [prioridade, setPrioridade] = useState(prioridadeAtual || "normal");
+  const [prioridade, setPrioridade] = useState(prioridadeAtual || "");
   const [salvando, setSalvando] = useState(false);
   const [definida, setDefinida] = useState(!!prioridadeAtual);
 
   async function salvar() {
+    if (!prioridade) {
+      toast.warning("Selecione uma prioridade antes de confirmar.");
+      return;
+    }
     setSalvando(true);
     try {
       await alterarPrioridadeChamadoAdmin({
@@ -326,25 +329,36 @@ function DefinirPrioridadeInline({
         flexWrap: "wrap",
       }}
     >
-      <select
-        value={prioridade}
-        onChange={(e) => setPrioridade(e.target.value)}
-        style={{
-          padding: "6px 10px",
-          borderRadius: 8,
-          border: "1px solid rgba(50, 200, 255, 0.3)",
-          background: "rgba(50, 200, 255, 0.1)",
-          color: "inherit",
-          fontSize: "0.85rem",
-          cursor: "pointer",
-          outline: "none",
-        }}
-      >
-        <option value="baixa">Baixa</option>
-        <option value="normal">Normal</option>
-        <option value="alta">Alta</option>
-        <option value="urgente">Urgente</option>
-      </select>
+      <div style={{ width: 160 }}>
+        <SelectPersonalizado
+          valor={prioridade}
+          onChange={setPrioridade}
+          placeholder="Selecione"
+          direcao="cima"
+          opcoes={[
+            {
+              value: "baixa",
+              label: "Baixa",
+              icone: <FaFlag color="#64748b" />,
+            },
+            {
+              value: "normal",
+              label: "Normal",
+              icone: <FaFlag color="#10b981" />,
+            },
+            {
+              value: "alta",
+              label: "Alta",
+              icone: <FaFlag color="#f97316" />,
+            },
+            {
+              value: "urgente",
+              label: "Urgente",
+              icone: <FaFlag color="#ff4d4d" />,
+            },
+          ]}
+        />
+      </div>
       <button
         onClick={salvar}
         disabled={salvando}
