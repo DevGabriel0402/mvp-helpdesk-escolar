@@ -6,16 +6,24 @@ const ConfiguracoesContexto = createContext(null);
 
 const configPadrao = {
     cores: {
-        texto: "#ffffff",
-        fundo: "#0b0b0c",
-        vidro: "rgba(255,255,255,0.06)",
-        borda: "rgba(255,255,255,0.12)",
+        fundo: "#0a0b0e",
+        fundo2: "#12141a",
+        texto: "#f5f5f5",
+        textoFraco: "rgba(245,245,245,0.6)",
+        vidro: "rgba(255,255,255,0.04)",
+        vidroForte: "rgba(255,255,255,0.08)",
+        borda: "rgba(255,255,255,0.1)",
+        pretoTransparente: "rgba(0,0,0,0.25)",
+        brancoTransparente: "rgba(255,255,255,0.06)",
+        menuFundo: "rgba(5, 5, 10, 0.9)",
+        destaque: "rgba(255,255,255,0.06)",
         icone: "#ffffff",
         badgeFundo: "rgba(255, 60, 60, 0.95)",
         badgeTexto: "#ffffff",
         botaoFundo: "rgba(255,255,255,0.10)",
         botaoTexto: "#ffffff",
-        destaque: "#ffffff",
+        cartao: "#1a1a1a",
+        vermelho: "#ff4d4d"
     },
     logo: {
         url: "",
@@ -25,9 +33,22 @@ const configPadrao = {
     },
     preferencias: {
         modo: "escuro",
-        raio: 18,
+        raio: 6,
         blur: 16,
     },
+    status: [
+        { id: "aberto", label: "Recebido", color: "#32c8ff" },
+        { id: "andamento", label: "Em Progresso", color: "#ffc832" },
+        { id: "prodabel", label: "Encaminhado Prodabel", color: "#a855f7" },
+        { id: "resolvido", label: "Resolvido", color: "#32ff64" },
+        { id: "fechado", label: "Concluído", color: "#94a3b8" },
+    ],
+    prioridades: [
+        { id: "urgente", label: "Urgente", color: "#ff4d4d" },
+        { id: "alta", label: "Alta", color: "#f97316" },
+        { id: "normal", label: "Normal", color: "#10b981" },
+        { id: "baixa", label: "Baixa", color: "#64748b" },
+    ]
 };
 
 export function ProvedorConfiguracoes({ children }) {

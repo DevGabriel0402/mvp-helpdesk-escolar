@@ -82,59 +82,55 @@ const Linha2 = styled.div`
 `;
 
 function formatarMs(ms) {
-    if (!ms) return "";
-    return new Date(ms).toLocaleString("pt-BR");
+  if (!ms) return "";
+  return new Date(ms).toLocaleString("pt-BR");
 }
 
 export default function NotificacoesAdmin() {
-    const navigate = useNavigate();
-    const { usuarioAuth, perfil, eAdmin } = usarAuth();
+  const navigate = useNavigate();
+  const { usuarioAuth, perfil, eAdmin } = usarAuth();
 
-    const escolaId = perfil?.escolaId;
-    const { notificacoes, marcarTudoComoLido, limparTudo, marcarComoLida } =
-        useNotificacoesChamados({
-            uid: usuarioAuth?.uid,
-            escolaId,
-            ativo: !!eAdmin,
-        });
+  const escolaId = perfil?.escolaId;
+  const { notificacoes, marcarTudoComoLido, limparTudo, marcarComoLida } =
+    useNotificacoesChamados();
 
-    if (!eAdmin) return <p>Acesso negado.</p>;
+  if (!eAdmin) return <p>Acesso negado.</p>;
 
-    return (
-        <Container>
-            <Cartao>
-                <Titulo>Notificações</Titulo>
-                <Acoes>
-                    <Botao onClick={marcarTudoComoLido}><FaCheck /> Marcar tudo como lido</Botao>
-                    <Botao onClick={limparTudo}><FaTrash /> Limpar</Botao>
-                </Acoes>
-            </Cartao>
+  return (
+    <Container>
+      <Cartao>
+        <Titulo>Notificações</Titulo>
+        <Acoes>
+          <Botao onClick={marcarTudoComoLido}><FaCheck /> Marcar tudo como lido</Botao>
+          <Botao onClick={limparTudo}><FaTrash /> Limpar</Botao>
+        </Acoes>
+      </Cartao>
 
-            {notificacoes.length === 0 && (
-                <Cartao style={{ textAlign: 'center', opacity: 0.7, padding: 30 }}>
-                    Nenhuma notificação nova.
-                </Cartao>
-            )}
+      {notificacoes.length === 0 && (
+        <Cartao style={{ textAlign: 'center', opacity: 0.7, padding: 30 }}>
+          Nenhuma notificação nova.
+        </Cartao>
+      )}
 
-            {notificacoes.map((n) => (
-                <Item
-                    key={n.id}
-                    $lida={n.lida}
-                    onClick={() => {
-                        marcarComoLida(n.chamadoId);
-                        navigate(`/app/chamados/${n.chamadoId}`);
-                    }}
-                >
-                    <Linha1>
-                        <span style={{ color: n.lida ? 'inherit' : '#32c8ff' }}>{n.codigoChamado || "Novo chamado"}</span>
-                        <span style={{ opacity: 0.7, fontSize: 12, fontWeight: 400 }}>{formatarMs(n.criadoMs)}</span>
-                    </Linha1>
-                    <Linha2>
-                        <b style={{ fontWeight: 600 }}>{n.titulo}</b>
-                        {n.mensagem ? ` — ${n.mensagem}` : ""}
-                    </Linha2>
-                </Item>
-            ))}
-        </Container>
-    );
+      {notificacoes.map((n) => (
+        <Item
+          key={n.id}
+          $lida={n.lida}
+          onClick={() => {
+            marcarComoLida(n.chamadoId);
+            navigate(`/app/chamados/${n.chamadoId}`);
+          }}
+        >
+          <Linha1>
+            <span style={{ color: n.lida ? 'inherit' : '#32c8ff' }}>{n.codigoChamado || "Novo chamado"}</span>
+            <span style={{ opacity: 0.7, fontSize: 12, fontWeight: 400 }}>{formatarMs(n.criadoMs)}</span>
+          </Linha1>
+          <Linha2>
+            <b style={{ fontWeight: 600 }}>{n.titulo}</b>
+            {n.mensagem ? ` — ${n.mensagem}` : ""}
+          </Linha2>
+        </Item>
+      ))}
+    </Container>
+  );
 }

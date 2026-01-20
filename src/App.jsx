@@ -7,6 +7,7 @@ import { GlobalStyle } from "./estilos/GlobalStyle";
 import { ProvedorAuth } from "./contextos/AuthContexto";
 import { ProvedorTema, usarTema } from "./contextos/TemaContexto";
 import { ProvedorConfiguracoes } from "./contextos/ConfiguracoesContexto";
+import { ProvedorNotificacoes } from "./contextos/NotificacoesContexto";
 import Rotas from "./app/rotas/Rotas";
 
 function AppConteudo() {
@@ -27,9 +28,11 @@ function App() {
   return (
     <ProvedorAuth>
       <ProvedorConfiguracoes>
-        <ProvedorTema>
-          <AppConteudo />
-        </ProvedorTema>
+        <ProvedorNotificacoes>
+          <ProvedorTema>
+            <AppConteudo />
+          </ProvedorTema>
+        </ProvedorNotificacoes>
       </ProvedorConfiguracoes>
     </ProvedorAuth>
   );

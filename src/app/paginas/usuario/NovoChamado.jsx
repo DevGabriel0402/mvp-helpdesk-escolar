@@ -8,6 +8,7 @@ import { criarChamado } from "../../../servicos/firebase/chamadosServico";
 import { useNavigate } from "react-router-dom";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
 import ModalChamadoCriado from "../../../componentes/chamados/ModalChamadoCriado";
+import { usarConfiguracoes } from "../../../contextos/ConfiguracoesContexto";
 
 const Caixa = styled.div`
   background: ${({ theme }) => theme.cores.fundo2};
@@ -76,10 +77,12 @@ export default function NovoChamado() {
     const { perfil, eVisitante, uid } = usarAuth();
     const navegar = useNavigate();
 
+    const { configUI } = usarConfiguracoes();
+
     const [titulo, setTitulo] = useState("");
     const [localDoProblema, setLocalDoProblema] = useState("");
     const [categoriaId, setCategoriaId] = useState("");
-    const [prioridade, setPrioridade] = useState("normal");
+    const [prioridade, setPrioridade] = useState(configUI.prioridades?.[0]?.id || "normal");
     const [descricao, setDescricao] = useState("");
     const [nomeSolicitante, setNomeSolicitante] = useState("");
     const [carregando, setCarregando] = useState(false);
@@ -94,12 +97,11 @@ export default function NovoChamado() {
         { value: "rede", label: "Rede/Internet" },
         { value: "outro", label: "Outro" },
     ];
-    const prioridades = [
-        { value: "baixa", label: "Baixa" },
-        { value: "normal", label: "Normal" },
-        { value: "alta", label: "Alta" },
-        { value: "urgente", label: "Urgente" },
-    ];
+
+    const prioridadesOpcoes = configUI.prioridades?.map(p => ({
+        value: p.id,
+        label: p.label
+    })) || [];
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -142,7 +144,7 @@ export default function NovoChamado() {
                 descricao,
                 localDoProblema,
                 categoriaLabel: categorias.find(o => o.value === categoriaId)?.label || categoriaId,
-                prioridadeLabel: prioridades.find(o => o.value === prioridade)?.label || prioridade,
+                prioridadeLabel: prioridadesOpcoes.find(o => o.value === prioridade)?.label || prioridade,
                 solicitante: usuarioDados.nome,
             });
 
@@ -153,7 +155,7 @@ export default function NovoChamado() {
             setDescricao("");
             setLocalDoProblema("");
             setCategoriaId("");
-            setPrioridade("normal");
+            setPrioridade(configUI.prioridades?.[0]?.id || "normal");
 
         } catch (error) {
             console.error(error);
@@ -210,7 +212,7 @@ export default function NovoChamado() {
                     <div style={{ width: 140 }}>
                         <Label>Prioridade</Label>
                         <SelectPersonalizado
-                            opcoes={prioridades}
+                            opcoes={prioridadesOpcoes}
                             valor={prioridade}
                             onChange={setPrioridade}
                             placeholder="Selecione"

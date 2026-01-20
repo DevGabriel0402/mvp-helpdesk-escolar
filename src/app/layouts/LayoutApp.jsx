@@ -369,11 +369,7 @@ export default function LayoutApp() {
   const { sair, perfil, eVisitante, usuarioAuth } = usarAuth();
   const { modo, alternarTema } = usarTema();
 
-  const { naoLidas } = useNotificacoesChamados({
-    uid: usuarioAuth?.uid,
-    escolaId: perfil?.escolaId,
-    ativo: !eVisitante, // so admin
-  });
+  const { naoLidas } = useNotificacoesChamados();
 
   const IconeTema = modo === "escuro" ? FaSun : FaMoon;
   const labelTema = modo === "escuro" ? "Modo Claro" : "Modo Escuro";

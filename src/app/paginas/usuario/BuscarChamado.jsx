@@ -5,6 +5,7 @@ import { FaRegStickyNote, FaExchangeAlt, FaPlusCircle, FaMapMarkerAlt, FaUser, F
 import { CampoTexto } from "../../../componentes/ui/CampoTexto";
 import { Botao } from "../../../componentes/ui/Botao";
 import { usarAuth } from "../../../contextos/AuthContexto";
+import { usarConfiguracoes } from "../../../contextos/ConfiguracoesContexto";
 import { buscarChamadoPorNumero, ouvirComentarios, ouvirAtualizacoes } from "../../../servicos/firebase/chamadosServico";
 
 const Container = styled.div`
@@ -49,24 +50,14 @@ const StatusBadge = styled.span`
   font-weight: 600;
   text-transform: capitalize;
   
-  background: ${({ $status }) => {
-        switch ($status) {
-            case "aberto": return "rgba(50, 200, 255, 0.15)";
-            case "andamento": return "rgba(255, 200, 50, 0.15)";
-            case "prodabel": return "rgba(155, 89, 182, 0.15)"; // Purple
-            case "resolvido": return "rgba(50, 255, 100, 0.15)";
-            default: return "rgba(255, 255, 255, 0.1)";
-        }
+  background: ${({ $status, $config }) => {
+        const s = $config?.find(x => x.id === $status);
+        return s ? `${s.color}26` : "rgba(255, 255, 255, 0.1)";
     }};
 
-  color: ${({ $status }) => {
-        switch ($status) {
-            case "aberto": return "#32c8ff";
-            case "andamento": return "#ffc832";
-            case "prodabel": return "#9b59b6"; // Purple
-            case "resolvido": return "#32ff64";
-            default: return "#ccc";
-        }
+  color: ${({ $status, $config }) => {
+        const s = $config?.find(x => x.id === $status);
+        return s ? s.color : "#ccc";
     }};
 `;
 
@@ -77,22 +68,14 @@ const PrioridadeBadge = styled.span`
   font-weight: 600;
   text-transform: capitalize;
   
-  background: ${({ $prio }) => {
-        switch ($prio) {
-            case "alta": return "rgba(255, 77, 77, 0.15)";
-            case "media": return "rgba(255, 200, 50, 0.15)";
-            case "baixa": return "rgba(50, 200, 255, 0.15)";
-            default: return "rgba(255, 255, 255, 0.1)";
-        }
+  background: ${({ $prio, $config }) => {
+        const p = $config?.find(x => x.id === $prio);
+        return p ? `${p.color}26` : "rgba(255, 255, 255, 0.1)";
     }};
 
-  color: ${({ $prio }) => {
-        switch ($prio) {
-            case "alta": return "#ff4d4d";
-            case "media": return "#ffc832";
-            case "baixa": return "#32c8ff";
-            default: return "#ccc";
-        }
+  color: ${({ $prio, $config }) => {
+        const p = $config?.find(x => x.id === $prio);
+        return p ? p.color : "#ccc";
     }};
 `;
 
@@ -163,17 +146,12 @@ function pegarMillis(data) {
     return 0;
 }
 
-function traduzirStatus(status) {
-    switch (status) {
-        case "aberto": return "Aberto";
-        case "andamento": return "Em Progresso";
-        case "resolvido": return "Resolvido";
-        default: return status;
-    }
-}
-
 export default function BuscarChamado() {
     const { perfil, uid, eAdmin } = usarAuth();
+    const { configUI } = usarConfiguracoes();
+
+    const traduzirStatus = (id) => configUI.status?.find(s => s.id === id)?.label || id;
+    const traduzirPrioridade = (id) => configUI.prioridades?.find(p => p.id === id)?.label || id;
 
     const [entrada, setEntrada] = useState("");
     const [carregando, setCarregando] = useState(false);
@@ -285,10 +263,10 @@ export default function BuscarChamado() {
                 <Caixa>
                     <CabecalhoChamado>
                         <CodigoChamado>{chamado?.codigoChamado || `#${chamado.numeroChamado}`}</CodigoChamado>
-                        <StatusBadge $status={chamado.status}>
-                            {chamado.status === 'andamento' ? 'Em Progresso' : (chamado.status === 'aberto' ? 'Recebido' : chamado.status)}
+                        <StatusBadge $status={chamado.status} $config={configUI.status}>
+                            {traduzirStatus(chamado.status)}
                         </StatusBadge>
-                        <PrioridadeBadge $prio={chamado.prioridade}>{chamado.prioridade}</PrioridadeBadge>
+                        <PrioridadeBadge $prio={chamado.prioridade} $config={configUI.prioridades}>{traduzirPrioridade(chamado.prioridade)}</PrioridadeBadge>
                     </CabecalhoChamado>
 
                     <Titulo>{chamado.titulo}</Titulo>
@@ -342,7 +320,7 @@ export default function BuscarChamado() {
                                             </div>
                                             {item.tipo === "mudanca_status" && (
                                                 <div style={{ marginTop: 4, fontSize: '0.8rem', opacity: 0.7 }}>
-                                                    {item.de || '...'} → <strong>{item.para}</strong>
+                                                    {traduzirStatus(item.de)} → <strong>{traduzirStatus(item.para)}</strong>
                                                 </div>
                                             )}
                                             {item.texto && <div style={{ marginTop: 6, fontSize: '0.85rem', opacity: 0.8 }}>{item.texto}</div>}
