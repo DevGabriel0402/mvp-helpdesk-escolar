@@ -8,29 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg"],
-      manifest: {
-        name: "Suporte TI",
-        short_name: "Suporte",
-        start_url: "/",
-        display: "standalone",
-        background_color: "#0a0b0e",
-        theme_color: "#0a0b0e",
-        icons: [
-          {
-            src: "/favicon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any",
-          },
-          {
-            src: "/favicon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "maskable",
-          },
-        ],
-      },
+      manifest: false, // Usando manifest externo em public/manifest.webmanifest
       workbox: {
         navigateFallback: "/index.html",
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],

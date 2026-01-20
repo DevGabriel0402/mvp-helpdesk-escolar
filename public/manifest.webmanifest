@@ -1,0 +1,21 @@
+{
+  "name": "Suporte TI",
+  "short_name": "Suporte",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0b0e",
+  "theme_color": "#0a0b0e",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_256,h_256,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "https://res.cloudinary.com/dsqtianpj/image/upload/c_fill,w_256,h_256,q_auto,f_auto/helpdesk/perfis/it9ujmoutxkxjuxdnwip",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
