@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FaPlusCircle,
   FaSearch,
@@ -515,7 +515,7 @@ function formatarMs(ms) {
   return new Date(ms).toLocaleDateString("pt-BR");
 }
 
-function DropdownNotificacoes({ aberto, onFechar, anchorRef }) {
+function DropdownNotificacoes({ aberto, onFechar }) {
   const navigate = useNavigate();
   const { notificacoes, marcarTudoComoLido, limparTudo, marcarComoLida } =
     usarNotificacoes();
@@ -765,7 +765,6 @@ export default function LayoutApp() {
   const { modo, alternarTema } = usarTema();
   const { naoLidas } = usarNotificacoes();
   const painel = usePainelPublico("escola_padrao");
-  const navigate = useNavigate();
   const [online, setOnline] = useState(navigator.onLine);
   const [notifAberto, setNotifAberto] = useState(false);
 

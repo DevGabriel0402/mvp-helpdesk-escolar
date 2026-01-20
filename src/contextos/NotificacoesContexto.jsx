@@ -10,6 +10,29 @@ import {
 
 const NotificacoesContexto = createContext(null);
 
+// Elemento de áudio para som de notificação
+let audioElement = null;
+
+function tocarSomNotificacao() {
+  try {
+    // Usar som de notificação público
+    if (!audioElement) {
+      audioElement = new Audio(
+        "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+      );
+      audioElement.volume = 0.5;
+    }
+
+    // Reiniciar e tocar
+    audioElement.currentTime = 0;
+    audioElement.play().catch(() => {
+      // Ignorar erro se autoplay bloqueado
+    });
+  } catch (err) {
+    console.warn("Erro ao tocar som:", err);
+  }
+}
+
 function chaveStorage({ uid, escolaId }) {
   return `helpdesk:notificacoes:${uid}:${escolaId}`;
 }
@@ -35,9 +58,22 @@ export function ProvedorNotificacoes({ children }) {
   const escolaId = perfil?.escolaId;
   const ativo = !!eAdmin;
 
-  const [notificacoes, setNotificacoes] = useState([]);
-  const [ultimoVistoMs, setUltimoVistoMs] = useState(0);
-  const ultimoVistoRef = useRef(0);
+  // Flag para ignorar o primeiro snapshot (carregamento inicial)
+  const primeiroSnapshot = useRef(true);
+
+  // Estado inicial baseado nas condições
+  const estadoInicial = useMemo(() => {
+    if (!ativo || !uid || !escolaId) return [];
+    return carregarStorage({ uid, escolaId });
+  }, [ativo, uid, escolaId]);
+
+  const [notificacoes, setNotificacoes] = useState(estadoInicial);
+  const [ultimoVistoMs, setUltimoVistoMs] = useState(() => {
+    if (!ativo || !uid || !escolaId) return 0;
+    const estadoLocal = carregarEstadoNotificacoesLocal(uid, escolaId);
+    return estadoLocal?.ultimoVistoMs || 0;
+  });
+  const ultimoVistoRef = useRef(ultimoVistoMs);
 
   // Mantém o ref sincronizado com o state
   useEffect(() => {
@@ -50,33 +86,21 @@ export function ProvedorNotificacoes({ children }) {
     [notificacoes],
   );
 
-  // Carregar estado inicial (localStorage + Firestore)
+  // Sincronizar com Firestore quando ativo
   useEffect(() => {
-    if (!ativo || !uid || !escolaId) {
-      setNotificacoes([]);
-      setUltimoVistoMs(0);
-      return;
-    }
+    if (!ativo || !uid || !escolaId) return;
 
-    async function carregarEstado() {
-      // 1. Carrega do localStorage primeiro (instantâneo)
-      const estadoLocal = carregarEstadoNotificacoesLocal(uid, escolaId);
-      if (estadoLocal?.ultimoVistoMs) {
-        setUltimoVistoMs(estadoLocal.ultimoVistoMs);
-      }
-      const iniciais = carregarStorage({ uid, escolaId });
-      setNotificacoes(iniciais);
-
-      // 2. Sincroniza com Firestore
+    async function sincronizarEstado() {
       try {
         const estadoRemoto = await buscarEstadoNotificacoes(uid, escolaId);
         if (estadoRemoto?.ultimoVistoMs) {
           setUltimoVistoMs(estadoRemoto.ultimoVistoMs);
           // Se o remoto é mais recente, limpa notificações antigas
-          const notifsFiltradas = iniciais.filter(
+          const atuais = carregarStorage({ uid, escolaId });
+          const notifsFiltradas = atuais.filter(
             (n) => n.criadoMs > estadoRemoto.ultimoVistoMs,
           );
-          if (notifsFiltradas.length !== iniciais.length) {
+          if (notifsFiltradas.length !== atuais.length) {
             salvarStorage({ uid, escolaId }, notifsFiltradas);
             setNotificacoes(notifsFiltradas);
           }
@@ -86,12 +110,17 @@ export function ProvedorNotificacoes({ children }) {
       }
     }
 
-    carregarEstado();
+    sincronizarEstado();
   }, [ativo, uid, escolaId]);
 
   // Listener de chamados novos
   useEffect(() => {
-    if (!ativo || !uid || !escolaId) return;
+    if (!ativo || !uid || !escolaId) {
+      return;
+    }
+
+    // Reset flag no início do listener
+    primeiroSnapshot.current = true;
 
     const q = query(
       collection(db, "chamados"),
@@ -100,6 +129,15 @@ export function ProvedorNotificacoes({ children }) {
     );
 
     const off = onSnapshot(q, (snap) => {
+      // Ignorar primeiro snapshot (carregamento inicial)
+      if (primeiroSnapshot.current) {
+        primeiroSnapshot.current = false;
+        // Só carrega os dados sem tocar som
+        const atuais = carregarStorage({ uid, escolaId });
+        setNotificacoes(atuais);
+        return;
+      }
+
       // Se não há chamados no Firestore, limpar notificações locais
       if (snap.empty) {
         salvarStorage({ uid, escolaId }, []);
@@ -141,6 +179,8 @@ export function ProvedorNotificacoes({ children }) {
       if (mudou) {
         salvarStorage({ uid, escolaId }, atuais);
         setNotificacoes(atuais);
+        // Tocar som de notificação
+        tocarSomNotificacao();
       }
     });
 
@@ -199,9 +239,13 @@ export function ProvedorNotificacoes({ children }) {
   );
 }
 
-export function usarNotificacoes() {
+// eslint-disable-next-line react-refresh/only-export-components
+export function useNotificacoes() {
   const ctx = useContext(NotificacoesContexto);
   if (!ctx)
-    throw new Error("usarNotificacoes deve ser usado dentro de ProvedorNotificacoes");
+    throw new Error("useNotificacoes deve ser usado dentro de ProvedorNotificacoes");
   return ctx;
 }
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const usarNotificacoes = useNotificacoes;
