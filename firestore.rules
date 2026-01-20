@@ -37,6 +37,13 @@ service cloud.firestore {
     match /escolas/{escolaId} {
       allow read: if estaLogado();
       allow create, update, delete: if temDocUsuario();
+
+      // Permitir admin atualizar painel público (configuracoes/painel)
+      match /configuracoes/{docId} {
+        allow read: if true;
+        allow create, update: if temDocUsuario();
+        allow delete: if false;
+      }
     }
 
     // ===== usuarios =====
