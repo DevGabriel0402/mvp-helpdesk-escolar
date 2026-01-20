@@ -37,6 +37,7 @@ const FiltroWrapper = styled.div`
 const OPCOES_FILTRO = [
   { value: "todos", label: "Todos" },
   { value: "pendentes", label: "Pendentes" },
+  { value: "encaminhados", label: "Encaminhados" },
   { value: "concluido", label: "Concluído" },
 ];
 
@@ -63,10 +64,13 @@ export default function DashboardAdmin() {
     if (filtro === "todos") return chamados;
 
     if (filtro === "pendentes") {
-      // Pendentes = aberto, andamento, prodabel
-      return chamados.filter((c) =>
-        ["aberto", "andamento", "prodabel"].includes(c.status),
-      );
+      // Pendentes = aberto, andamento
+      return chamados.filter((c) => ["aberto", "andamento"].includes(c.status));
+    }
+
+    if (filtro === "encaminhados") {
+      // Encaminhados = prodabel
+      return chamados.filter((c) => c.status === "prodabel");
     }
 
     if (filtro === "concluido") {

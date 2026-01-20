@@ -131,7 +131,7 @@ export default function NovoChamado() {
           titulo,
           localDoProblema,
           categoriaId,
-          prioridade,
+          prioridade: prioridade || null,
           descricao,
           anexos: [],
         },

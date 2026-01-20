@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
-import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaPlusCircle,
   FaSearch,
@@ -10,6 +10,8 @@ import {
   FaSignOutAlt,
   FaMoon,
   FaSun,
+  FaCheck,
+  FaTrash,
 } from "react-icons/fa";
 // Changed Home icon to Dashboard icon as requested
 import { RxDashboard } from "react-icons/rx";
@@ -356,6 +358,237 @@ const Badge = styled.div`
   border: 2px solid rgba(0, 0, 0, 0.35);
 `;
 
+// --- Dropdown de Notificações ---
+
+const NotifDropdownOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+`;
+
+const NotifDropdown = styled(motion.div)`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  max-height: 420px;
+  z-index: 160;
+
+  background: ${({ theme }) => theme.cores.fundo};
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 400px) {
+    position: fixed;
+    top: 70px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+`;
+
+const NotifHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.cores.borda};
+  background: ${({ theme }) => theme.cores.vidro};
+`;
+
+const NotifTitulo = styled.h3`
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.cores.texto};
+`;
+
+const NotifActions = styled.div`
+  display: flex;
+  gap: 6px;
+`;
+
+const NotifActionBtn = styled.button`
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  background: transparent;
+  color: ${({ theme }) => theme.cores.textoFraco};
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${({ theme }) => theme.cores.destaque};
+    border-color: ${({ theme }) => theme.cores.destaque};
+    color: white;
+  }
+`;
+
+const NotifList = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  max-height: 320px;
+`;
+
+const NotifEmpty = styled.div`
+  text-align: center;
+  padding: 30px 20px;
+  opacity: 0.6;
+  color: ${({ theme }) => theme.cores.texto};
+  font-size: 14px;
+`;
+
+const NotifItem = styled.button`
+  text-align: left;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid ${({ theme }) => theme.cores.borda};
+  background: ${(props) => (props.$lida ? "transparent" : `rgba(59, 130, 246, 0.08)`)};
+  color: ${({ theme }) => theme.cores.texto};
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: ${({ theme }) => theme.cores.vidroForte};
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const NotifItemL1 = styled.div`
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+`;
+
+const NotifItemL2 = styled.div`
+  opacity: 0.75;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const NotifVerTodos = styled.button`
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.cores.borda};
+  background: ${({ theme }) => theme.cores.vidro};
+  color: ${({ theme }) => theme.cores.destaque};
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: ${({ theme }) => theme.cores.vidroForte};
+  }
+`;
+
+function formatarMs(ms) {
+  if (!ms) return "";
+  const agora = Date.now();
+  const diff = agora - ms;
+  const minutos = Math.floor(diff / 60000);
+  const horas = Math.floor(diff / 3600000);
+  const dias = Math.floor(diff / 86400000);
+
+  if (minutos < 1) return "Agora";
+  if (minutos < 60) return `${minutos}min`;
+  if (horas < 24) return `${horas}h`;
+  if (dias < 7) return `${dias}d`;
+  return new Date(ms).toLocaleDateString("pt-BR");
+}
+
+function DropdownNotificacoes({ aberto, onFechar, anchorRef }) {
+  const navigate = useNavigate();
+  const { notificacoes, marcarTudoComoLido, limparTudo, marcarComoLida } =
+    usarNotificacoes();
+
+  function handleItemClick(n) {
+    marcarComoLida(n.chamadoId);
+    onFechar();
+    navigate(`/app/chamados/${n.chamadoId}`);
+  }
+
+  function handleVerTodos() {
+    onFechar();
+    navigate("/app/notificacoes");
+  }
+
+  // Limita a 5 notificações no dropdown
+  const notifsMostradas = notificacoes.slice(0, 5);
+
+  return (
+    <AnimatePresence>
+      {aberto && (
+        <>
+          <NotifDropdownOverlay onClick={onFechar} />
+          <NotifDropdown
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+            <NotifHeader>
+              <NotifTitulo>Notificações</NotifTitulo>
+              <NotifActions>
+                <NotifActionBtn onClick={marcarTudoComoLido} title="Marcar como lidas">
+                  <FaCheck size={12} />
+                </NotifActionBtn>
+                <NotifActionBtn onClick={limparTudo} title="Limpar tudo">
+                  <FaTrash size={12} />
+                </NotifActionBtn>
+              </NotifActions>
+            </NotifHeader>
+
+            <NotifList>
+              {notificacoes.length === 0 ? (
+                <NotifEmpty>Nenhuma notificação nova.</NotifEmpty>
+              ) : (
+                notifsMostradas.map((n) => (
+                  <NotifItem key={n.id} $lida={n.lida} onClick={() => handleItemClick(n)}>
+                    <NotifItemL1>
+                      <span style={{ color: n.lida ? "inherit" : "#3B82F6" }}>
+                        {n.codigoChamado || "Novo chamado"}
+                      </span>
+                      <span style={{ opacity: 0.5, fontSize: 11, fontWeight: 400 }}>
+                        {formatarMs(n.criadoMs)}
+                      </span>
+                    </NotifItemL1>
+                    <NotifItemL2>{n.titulo}</NotifItemL2>
+                  </NotifItem>
+                ))
+              )}
+            </NotifList>
+
+            {notificacoes.length > 0 && (
+              <NotifVerTodos onClick={handleVerTodos}>
+                Ver todas ({notificacoes.length})
+              </NotifVerTodos>
+            )}
+          </NotifDropdown>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // --- Mobile TabBar ---
 
 const TabBar = styled.div`
@@ -534,6 +767,7 @@ export default function LayoutApp() {
   const painel = usePainelPublico("escola_padrao");
   const navigate = useNavigate();
   const [online, setOnline] = useState(navigator.onLine);
+  const [notifAberto, setNotifAberto] = useState(false);
 
   // Detectar mudanças de conexão
   useEffect(() => {
@@ -558,15 +792,22 @@ export default function LayoutApp() {
 
   return (
     <Shell>
-      {/* Botão flutuante de notificações (Desktop) */}
+      {/* Botão flutuante de notificações (Desktop) com Dropdown */}
       {!eVisitante && (
-        <BotaoSinoFlutuante
-          onClick={() => navigate("/app/notificacoes")}
-          title="Notificações"
-        >
-          <FaBell />
-          {naoLidas > 0 && <Badge>{naoLidas > 99 ? "99+" : naoLidas}</Badge>}
-        </BotaoSinoFlutuante>
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 120 }}>
+          <BotaoSinoFlutuante
+            onClick={() => setNotifAberto(!notifAberto)}
+            title="Notificações"
+            style={{ position: "relative", top: 0, right: 0 }}
+          >
+            <FaBell />
+            {naoLidas > 0 && <Badge>{naoLidas > 99 ? "99+" : naoLidas}</Badge>}
+          </BotaoSinoFlutuante>
+          <DropdownNotificacoes
+            aberto={notifAberto}
+            onFechar={() => setNotifAberto(false)}
+          />
+        </div>
       )}
 
       {/* Mobile Header */}
@@ -584,13 +825,19 @@ export default function LayoutApp() {
         </MobileLogo>
         <HeaderActions>
           {!eVisitante && (
-            <MobileBellBtn
-              onClick={() => navigate("/app/notificacoes")}
-              title="Notificações"
-            >
-              <FaBell size={20} />
-              {naoLidas > 0 && <Badge>{naoLidas > 99 ? "99+" : naoLidas}</Badge>}
-            </MobileBellBtn>
+            <div style={{ position: "relative" }}>
+              <MobileBellBtn
+                onClick={() => setNotifAberto(!notifAberto)}
+                title="Notificações"
+              >
+                <FaBell size={20} />
+                {naoLidas > 0 && <Badge>{naoLidas > 99 ? "99+" : naoLidas}</Badge>}
+              </MobileBellBtn>
+              <DropdownNotificacoes
+                aberto={notifAberto}
+                onFechar={() => setNotifAberto(false)}
+              />
+            </div>
           )}
           <MobileThemeBtn onClick={alternarTema}>
             <IconeTema size={20} />
