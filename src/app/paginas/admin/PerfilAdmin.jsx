@@ -7,7 +7,6 @@ import {
   FaUserShield,
   FaEnvelope,
   FaBuilding,
-  FaTrash,
   FaWifi,
 } from "react-icons/fa";
 import { useAuth } from "../../../contextos/AuthContexto";
@@ -518,11 +517,6 @@ export default function PerfilAdmin() {
     processarArquivo(e.dataTransfer.files?.[0]);
   }
 
-  function removerLogo() {
-    setLogo(padrao.logo);
-    toast.info("Logo removida. Salve para confirmar.");
-  }
-
   function resetar() {
     setNomePainel(padrao.nomePainel);
     setLogo(padrao.logo);
@@ -608,9 +602,6 @@ export default function PerfilAdmin() {
                   onClick={() => inputRef.current?.click()}
                 >
                   <FaCloudUploadAlt /> Trocar
-                </OverlayBtn>
-                <OverlayBtn $danger type="button" onClick={removerLogo}>
-                  <FaTrash /> Remover
                 </OverlayBtn>
               </PreviewOverlay>
             </PreviewBox>
