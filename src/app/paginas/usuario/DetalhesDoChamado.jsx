@@ -396,11 +396,25 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
   const theme = useTheme();
   const [status, setStatus] = useState(statusAtual || "aberto");
   const [nota, setNota] = useState("");
+  const [statusMaximo, setStatusMaximo] = useState(statusAtual || "aberto");
+
+  const hierarquia = {
+    aberto: 0,
+    andamento: 1,
+    prodabel: 2,
+    resolvido: 3,
+  };
 
   // Atualiza status local se o prop mudar
   useEffect(() => {
-    if (statusAtual) setStatus(statusAtual);
-  }, [statusAtual]);
+    if (statusAtual) {
+      setStatus(statusAtual);
+      // Mantemos o rastro do status mais alto ja alcancado
+      if (hierarquia[statusAtual] > hierarquia[statusMaximo]) {
+        setStatusMaximo(statusAtual);
+      }
+    }
+  }, [statusAtual, statusMaximo]);
 
   async function salvarNota() {
     try {
@@ -422,6 +436,11 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
 
   async function mudarStatus() {
     try {
+      // Bloqueio imediato local para UI
+      if (hierarquia[status] > hierarquia[statusMaximo]) {
+        setStatusMaximo(status);
+      }
+
       await alterarStatusChamadoAdmin({
         chamadoId,
         novoStatus: status,
@@ -439,6 +458,10 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
   async function finalizar() {
     try {
       if (!window.confirm("Deseja realmente finalizar o chamado?")) return;
+
+      // Bloqueio imediato local para UI
+      setStatusMaximo("resolvido");
+
       await alterarStatusChamadoAdmin({
         chamadoId,
         novoStatus: "resolvido",
@@ -472,21 +495,25 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
               value: "aberto",
               label: "Recebido",
               icone: <FaExclamationCircle color="#32c8ff" />,
+              disabled: hierarquia["aberto"] < hierarquia[statusMaximo],
             },
             {
               value: "andamento",
               label: "Em andamento",
               icone: <FaPlayCircle color="#ffc832" />,
+              disabled: hierarquia["andamento"] < hierarquia[statusMaximo],
             },
             {
               value: "prodabel",
               label: "Encaminhado para Prodabel",
               icone: <FaExternalLinkAlt color="#9b59b6" />,
+              disabled: hierarquia["prodabel"] < hierarquia[statusMaximo],
             },
             {
               value: "resolvido",
               label: "Resolvido",
               icone: <FaCheckCircle color="#32ff64" />,
+              disabled: hierarquia["resolvido"] < hierarquia[statusMaximo],
             },
           ]}
           placeholder="Selecione o status"

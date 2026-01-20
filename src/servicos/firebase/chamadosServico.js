@@ -265,6 +265,18 @@ export async function alterarStatusChamadoAdmin({
     const atual = snap.data();
     const statusAtual = atual.status || "aberto";
 
+    const hierarquia = {
+      aberto: 0,
+      andamento: 1,
+      prodabel: 2,
+      resolvido: 3,
+    };
+
+    // Regra: o status so pode avançar na hierarquia, nunca retroceder
+    if (hierarquia[novoStatus] < hierarquia[statusAtual]) {
+      throw new Error(`Nao e possivel retornar o status de ${statusAtual} para ${novoStatus}.`);
+    }
+
     // atualiza o documento principal
     const dadosUpdate = {
       status: novoStatus,

@@ -75,12 +75,15 @@ const Item = styled.button`
   justify-content: space-between;
   gap: 10px;
 
-  cursor: pointer;
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
   text-align: left;
+  opacity: ${({ disabled }) => (disabled ? 0.35 : 1)};
+  filter: ${({ disabled }) => (disabled ? "grayscale(100%)" : "none")};
+  pointer-events: ${({ disabled }) => (disabled ? "none" : "auto")};
 
   &:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(255,255,255,0.10);
+    background: ${({ disabled }) => (disabled ? "transparent" : "rgba(255,255,255,0.08)")};
+    border-color: ${({ disabled }) => (disabled ? "transparent" : "rgba(255,255,255,0.10)")};
   }
 `;
 
@@ -124,6 +127,7 @@ export default function SelectPersonalizado({
     }
 
     function selecionar(opcao) {
+        if (opcao.disabled) return;
         onChange?.(opcao.value);
         setAberto(false);
     }
@@ -156,6 +160,7 @@ export default function SelectPersonalizado({
                                 key={o.value}
                                 type="button"
                                 onClick={() => selecionar(o)}
+                                disabled={o.disabled}
                                 aria-selected={ativo}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
