@@ -12,7 +12,9 @@ import {
   FaExclamationCircle,
   FaPlayCircle,
   FaCheckCircle,
+  FaCheck,
   FaExternalLinkAlt,
+  FaFlag,
 } from "react-icons/fa";
 import { CampoTexto } from "../../../componentes/ui/CampoTexto";
 import { Botao } from "../../../componentes/ui/Botao";
@@ -180,7 +182,6 @@ const Item = styled.div`
 function normalizarEntrada(entrada) {
   const v = (entrada || "").trim().toUpperCase();
   // Suporta formato antigo HD-XXXX e novo OS N°XXXXX
-  if (v.startsWith("HD-")) return { ticketCode: v };
   if (v.startsWith("OS N°") || v.startsWith("OS N")) {
     // Extrai somente números do código OS
     const numero = v.replace(/\D/g, "");
@@ -261,7 +262,7 @@ export default function BuscarChamado() {
     const { ticketNumber, ticketCode } = normalizarEntrada(entrada);
 
     if (!ticketNumber && !ticketCode) {
-      toast.error("Digite o numero do chamado ou o protocolo (ex: HD-2026-000123).");
+      toast.error("Digite o numero do chamado ou o protocolo (ex: OS N°000123).");
       return;
     }
 
@@ -364,86 +365,156 @@ export default function BuscarChamado() {
               timeline.map((item) => {
                 if (item._tipoItem === "atualizacao") {
                   return (
-                    <Item
-                      key={item.id}
-                      style={{ borderLeft: "3px solid rgba(255,255,255,0.2)" }}
-                    >
+                    <Item key={item.id} style={{ display: "flex", gap: 16 }}>
                       <div
                         style={{
-                          fontSize: "0.75rem",
-                          color: "rgba(255,255,255,0.5)",
+                          width: 36,
+                          height: 36,
+                          borderRadius: "50%",
+                          background: (() => {
+                            if (item.tipo === "criacao") return "rgba(50, 200, 255, 0.1)";
+                            if (item.tipo === "nota") return "rgba(255, 200, 50, 0.1)";
+                            if (item.tipo === "mudanca_prioridade")
+                              return "rgba(255, 165, 0, 0.1)";
+                            switch (item.para) {
+                              case "prodabel":
+                                return "rgba(155, 89, 182, 0.1)";
+                              case "resolvido":
+                                return "rgba(50, 255, 100, 0.1)";
+                              case "andamento":
+                                return "rgba(255, 200, 50, 0.1)";
+                              default:
+                                return "rgba(50, 200, 255, 0.1)";
+                            }
+                          })(),
+                          color: (() => {
+                            if (item.tipo === "criacao") return "#32c8ff";
+                            if (item.tipo === "nota") return "#ffc832";
+                            if (item.tipo === "mudanca_prioridade") return "#ffa500";
+                            switch (item.para) {
+                              case "prodabel":
+                                return "#9b59b6";
+                              case "resolvido":
+                                return "#32ff64";
+                              case "andamento":
+                                return "#ffc832";
+                              default:
+                                return "#32c8ff";
+                            }
+                          })(),
                           display: "flex",
                           alignItems: "center",
-                          gap: 6,
-                          marginBottom: 4,
+                          justifyContent: "center",
+                          fontSize: "1rem",
+                          flexShrink: 0,
                         }}
                       >
                         {item.tipo === "criacao" && <FaPlusCircle />}
+                        {item.tipo === "nota" && <FaRegStickyNote />}
+                        {item.tipo === "mudanca_prioridade" && <FaFlag />}
                         {item.tipo === "mudanca_status" && (
                           <>
-                            {item.para === "aberto" && (
-                              <FaExclamationCircle color="#32c8ff" />
-                            )}
-                            {item.para === "andamento" && (
-                              <FaPlayCircle color="#ffc832" />
-                            )}
-                            {item.para === "prodabel" && (
-                              <FaExternalLinkAlt color="#9b59b6" />
-                            )}
-                            {item.para === "resolvido" && (
-                              <FaCheckCircle color="#32ff64" />
-                            )}
+                            {item.para === "aberto" && <FaExclamationCircle />}
+                            {item.para === "andamento" && <FaPlayCircle />}
+                            {item.para === "prodabel" && <FaExternalLinkAlt />}
+                            {item.para === "resolvido" && <FaCheckCircle />}
                             {!["aberto", "andamento", "prodabel", "resolvido"].includes(
                               item.para,
                             ) && <FaExchangeAlt />}
                           </>
                         )}
-                        {item.tipo === "nota" && <FaRegStickyNote />}
-                        {formatarData(item.criadoEm)}
                       </div>
-                      <div style={{ fontWeight: 500, fontSize: "0.85rem" }}>
-                        {item.tipo === "criacao"
-                          ? "Chamado Criado"
-                          : item.adminNome || "Admin"}
-                        {item.tipo === "mudanca_status" && " alterou o status"}
-                        {item.tipo === "nota" && " adicionou uma nota"}
+                      <div>
+                        <div
+                          style={{ fontWeight: 500, fontSize: "0.9rem", marginBottom: 2 }}
+                        >
+                          {item.tipo === "criacao"
+                            ? "Chamado Criado"
+                            : item.adminNome || "Sistema"}
+                          {item.tipo === "mudanca_status" &&
+                            item.para === "prodabel" &&
+                            " encaminhou para Prodabel"}
+                          {item.tipo === "mudanca_status" &&
+                            item.para !== "prodabel" &&
+                            " alterou o status"}
+                          {item.tipo === "mudanca_prioridade" && " alterou a prioridade"}
+                          {item.tipo === "nota" && " adicionou uma nota"}
+                        </div>
+                        <div style={{ fontSize: "0.75rem", opacity: 0.5, marginBottom: 6 }}>
+                          {formatarData(item.criadoEm)}
+                        </div>
+
+                        {item.tipo === "mudanca_prioridade" && (
+                          <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+                            Prioridade: {item.de} → <strong>{item.para}</strong>
+                          </div>
+                        )}
+                        {item.tipo === "mudanca_status" && (
+                          <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+                            {item.de === "aberto" ? "Recebido" : item.de} →{" "}
+                            <strong>
+                              {item.para === "aberto"
+                                ? "Recebido"
+                                : item.para === "prodabel"
+                                  ? "Prodabel"
+                                  : item.para}
+                            </strong>
+                          </div>
+                        )}
+                        {item.texto && (
+                          <div
+                            style={{
+                              fontSize: "0.9rem",
+                              opacity: 0.9,
+                              lineHeight: "1.5",
+                              marginTop: 4,
+                            }}
+                          >
+                            {item.texto}
+                          </div>
+                        )}
                       </div>
-                      {item.tipo === "mudanca_status" && (
-                        <div style={{ marginTop: 4, fontSize: "0.8rem", opacity: 0.7 }}>
-                          {item.de || "..."} → <strong>{item.para}</strong>
-                        </div>
-                      )}
-                      {item.texto && (
-                        <div style={{ marginTop: 6, fontSize: "0.85rem", opacity: 0.8 }}>
-                          {item.texto}
-                        </div>
-                      )}
                     </Item>
                   );
                 }
 
                 return (
-                  <Item key={item.id}>
+                  <Item key={item.id} style={{ display: "flex", gap: 16 }}>
                     <div
                       style={{
-                        fontSize: "0.75rem",
-                        opacity: 0.5,
-                        marginBottom: 4,
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        background: "rgba(50, 200, 255, 0.1)",
+                        color: "#32c8ff",
                         display: "flex",
                         alignItems: "center",
-                        gap: 6,
+                        justifyContent: "center",
+                        fontSize: "1rem",
+                        flexShrink: 0,
                       }}
                     >
-                      <FaCommentDots /> {formatarData(item.criadoEm)}
+                      <FaCommentDots />
                     </div>
-                    <div style={{ fontWeight: 500, fontSize: "0.85rem" }}>
-                      {item.nome}{" "}
-                      <span style={{ opacity: 0.6, fontSize: "0.75rem" }}>
-                        ({item.papel})
-                      </span>
-                    </div>
-                    <div style={{ marginTop: 6, fontSize: "0.85rem", opacity: 0.9 }}>
-                      {item.mensagem}
+                    <div>
+                      <div
+                        style={{ fontWeight: 500, fontSize: "0.9rem", marginBottom: 2 }}
+                      >
+                        {item.nome}{" "}
+                        <span
+                          style={{ opacity: 0.6, fontSize: "0.75rem", fontWeight: 400 }}
+                        >
+                          ({item.papel})
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.75rem", opacity: 0.5, marginBottom: 6 }}>
+                        {formatarData(item.criadoEm)}
+                      </div>
+                      <div
+                        style={{ fontSize: "0.9rem", opacity: 0.9, lineHeight: "1.5" }}
+                      >
+                        {item.mensagem}
+                      </div>
                     </div>
                   </Item>
                 );
