@@ -183,9 +183,9 @@ const MobileLogoutBtn = styled.button`
   background: transparent;
   border: 1px solid rgba(255, 77, 77, 0.2);
   color: #ff4d4d;
-  width: 38px;
-  height: 38px;
-  border-radius: 6px;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -199,9 +199,9 @@ const MobileThemeBtn = styled.button`
   background: transparent;
   border: 1px solid ${({ theme }) => theme.cores.borda};
   color: ${({ theme }) => theme.cores.texto};
-  width: 38px;
-  height: 38px;
-  border-radius: 6px;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -216,9 +216,9 @@ const MobileBellBtn = styled.button`
   background: transparent;
   border: 1px solid ${({ theme }) => theme.cores.borda};
   color: ${({ theme }) => theme.cores.texto};
-  width: 38px;
-  height: 38px;
-  border-radius: 6px;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -276,7 +276,7 @@ const TabBar = styled.div`
   position: fixed;
   left: 14px;
   right: 14px;
-  bottom: 14px;
+  bottom: 24px;
   z-index: 80;
 
   border-radius: 12px;
