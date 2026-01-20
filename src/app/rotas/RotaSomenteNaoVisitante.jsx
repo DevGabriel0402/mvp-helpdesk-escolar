@@ -1,8 +1,8 @@
 import { Navigate } from "react-router-dom";
-import { usarAuth } from "../../contextos/AuthContexto";
+import { useAuth } from "../../contextos/AuthContexto";
 
 export default function RotaSomenteNaoVisitante({ children }) {
-    const { eVisitante, carregando } = usarAuth();
+    const { eVisitante, carregando } = useAuth();
 
     if (carregando) return null;
 

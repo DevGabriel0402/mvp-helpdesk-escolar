@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "../servicos/firebase/firebaseConfig";
-import { usarAuth } from "./AuthContexto";
+import { useAuth } from "./AuthContexto";
 import {
   buscarEstadoNotificacoes,
   carregarEstadoNotificacoesLocal,
@@ -30,7 +30,7 @@ function salvarStorage({ uid, escolaId }, itens) {
 }
 
 export function ProvedorNotificacoes({ children }) {
-  const { usuarioAuth, perfil, eAdmin } = usarAuth();
+  const { usuarioAuth, perfil, eAdmin } = useAuth();
   const uid = usuarioAuth?.uid;
   const escolaId = perfil?.escolaId;
   const ativo = !!eAdmin;

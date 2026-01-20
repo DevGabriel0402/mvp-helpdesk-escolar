@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
-import { usarAuth } from "../../contextos/AuthContexto";
+import { useAuth } from "../../contextos/AuthContexto";
 import CarregandoTela from "../../componentes/ui/CarregandoTela";
 
 export default function RotaAdmin({ children }) {
-    const { carregando, estaLogado, eAdmin } = usarAuth();
+    const { carregando, estaLogado, eAdmin } = useAuth();
 
     if (carregando) return <CarregandoTela />;
 

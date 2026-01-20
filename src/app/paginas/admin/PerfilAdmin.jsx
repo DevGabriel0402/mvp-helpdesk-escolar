@@ -10,7 +10,7 @@ import {
   FaTrash,
   FaWifi,
 } from "react-icons/fa";
-import { usarAuth } from "../../../contextos/AuthContexto";
+import { useAuth } from "../../../contextos/AuthContexto";
 import {
   enviarImagemParaCloudinary,
   gerarUrlCloudinary256,
@@ -386,7 +386,7 @@ const padrao = {
 };
 
 export default function PerfilAdmin() {
-  const { usuarioAuth, perfil, eAdmin } = usarAuth();
+  const { usuarioAuth, perfil, eAdmin } = useAuth();
   const uid = usuarioAuth?.uid;
 
   const [nomePainel, setNomePainel] = useState(padrao.nomePainel);

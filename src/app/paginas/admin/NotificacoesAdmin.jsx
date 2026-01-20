@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { FaCheck, FaTrash } from "react-icons/fa";
-import { usarAuth } from "../../../contextos/AuthContexto";
+import { useAuth } from "../../../contextos/AuthContexto";
 import { useNotificacoesChamados } from "../../../hooks/useNotificacoesChamados";
 
 const Container = styled.div`
@@ -91,7 +91,7 @@ function formatarMs(ms) {
 
 export default function NotificacoesAdmin() {
   const navigate = useNavigate();
-  const { usuarioAuth, perfil, eAdmin } = usarAuth();
+  const { usuarioAuth, perfil, eAdmin } = useAuth();
 
   const escolaId = perfil?.escolaId;
   const { notificacoes, marcarTudoComoLido, limparTudo, marcarComoLida } =

@@ -4,7 +4,7 @@ import {
   carregarConfigLocal,
   salvarConfigUI,
 } from "../servicos/firebase/configuracoesServico";
-import { usarAuth } from "./AuthContexto";
+import { useAuth } from "./AuthContexto";
 
 const ConfiguracoesContexto = createContext(null);
 
@@ -56,7 +56,7 @@ const configPadrao = {
 };
 
 export function ProvedorConfiguracoes({ children }) {
-  const { usuarioAuth, eAdmin } = usarAuth();
+  const { usuarioAuth, eAdmin } = useAuth();
   const uid = usuarioAuth?.uid;
 
   const [configUI, setConfigUI] = useState(configPadrao);

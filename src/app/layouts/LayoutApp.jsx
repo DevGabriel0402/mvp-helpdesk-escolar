@@ -13,7 +13,7 @@ import {
 } from "react-icons/fa";
 // Changed Home icon to Dashboard icon as requested
 import { RxDashboard } from "react-icons/rx";
-import { usarAuth } from "../../contextos/AuthContexto";
+import { useAuth } from "../../contextos/AuthContexto";
 import { usarTema } from "../../contextos/TemaContexto";
 import { usarNotificacoes } from "../../contextos/NotificacoesContexto";
 import { usePainelPublico } from "../../hooks/usePainelPublico";
@@ -525,7 +525,7 @@ function MobileTabBar({ eVisitante }) {
 }
 
 export default function LayoutApp() {
-  const { sair, perfil, eVisitante } = usarAuth();
+  const { sair, perfil, eVisitante } = useAuth();
   const { modo, alternarTema } = usarTema();
   const { naoLidas } = usarNotificacoes();
   const painel = usePainelPublico("escola_padrao");

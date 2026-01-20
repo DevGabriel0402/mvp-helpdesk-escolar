@@ -16,11 +16,11 @@ import PerfilAdmin from "../paginas/admin/PerfilAdmin";
 
 // Protecao simples
 import RotaProtegida from "./RotaProtegida";
-import { usarAuth } from "../../contextos/AuthContexto";
+import { useAuth } from "../../contextos/AuthContexto";
 
 // Componente interno para redirecionar Home
 function InicioApp() {
-  const { eVisitante, eAdmin } = usarAuth();
+  const { eVisitante, eAdmin } = useAuth();
 
   if (eAdmin) {
     // Admin: Redireciona para a rota explicita do Dashboard

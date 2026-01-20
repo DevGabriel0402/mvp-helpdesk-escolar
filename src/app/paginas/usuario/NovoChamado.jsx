@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { toast } from "react-toastify";
 import { CampoTexto } from "../../../componentes/ui/CampoTexto";
 import { Botao } from "../../../componentes/ui/Botao";
-import { usarAuth } from "../../../contextos/AuthContexto";
+import { useAuth } from "../../../contextos/AuthContexto";
 import { criarChamado } from "../../../servicos/firebase/chamadosServico";
 import { useNavigate } from "react-router-dom";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
@@ -73,7 +73,7 @@ const Form = styled.form`
 `;
 
 export default function NovoChamado() {
-    const { perfil, eVisitante, uid } = usarAuth();
+    const { perfil, eVisitante, uid } = useAuth();
     const navegar = useNavigate();
 
     const [titulo, setTitulo] = useState("");

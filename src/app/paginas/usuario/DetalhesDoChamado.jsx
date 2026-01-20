@@ -12,7 +12,7 @@ import {
     buscarChamadoPorId,
     excluirChamadoAdmin
 } from "../../../servicos/firebase/chamadosServico";
-import { usarAuth } from "../../../contextos/AuthContexto";
+import { useAuth } from "../../../contextos/AuthContexto";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
 
 const Grid = styled.div`
@@ -392,7 +392,7 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
 export default function DetalhesDoChamado() {
     const { id } = useParams();
     const navegar = useNavigate();
-    const { perfil, eAdmin, uid } = usarAuth();
+    const { perfil, eAdmin, uid } = useAuth();
 
     const [chamado, setChamado] = useState(null);
     const [atualizacoes, setAtualizacoes] = useState([]);

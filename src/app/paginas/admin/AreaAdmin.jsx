@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import styled from "styled-components";
-import { usarAuth } from "../../../contextos/AuthContexto";
+import { useAuth } from "../../../contextos/AuthContexto";
 import { ouvirChamadosDaEscola } from "../../../servicos/firebase/chamadosServico";
 import { Cartao } from "../../../componentes/ui/Cartao";
 import TabelaChamados from "../../../componentes/admin/TabelaChamados";
@@ -62,7 +62,7 @@ const StatLabel = styled.span`
 `;
 
 export default function AreaAdmin() {
-    const { perfil, eAdmin } = usarAuth();
+    const { perfil, eAdmin } = useAuth();
     const [chamados, setChamados] = useState(null); // null = loading, [] = vazio
 
     useEffect(() => {

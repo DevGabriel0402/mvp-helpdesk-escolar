@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
-import { usarAuth } from "../../contextos/AuthContexto";
+import { useAuth } from "../../contextos/AuthContexto";
 import CarregandoTela from "../../componentes/ui/CarregandoTela";
 
 export default function RotaProtegida({ children }) {
-    const { carregando, estaLogado } = usarAuth();
+    const { carregando, estaLogado } = useAuth();
 
     if (carregando) return <CarregandoTela />;
 

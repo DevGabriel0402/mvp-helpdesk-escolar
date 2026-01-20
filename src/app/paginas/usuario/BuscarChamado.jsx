@@ -16,7 +16,7 @@ import {
 } from "react-icons/fa";
 import { CampoTexto } from "../../../componentes/ui/CampoTexto";
 import { Botao } from "../../../componentes/ui/Botao";
-import { usarAuth } from "../../../contextos/AuthContexto";
+import { useAuth } from "../../../contextos/AuthContexto";
 import {
   buscarChamadoPorNumero,
   ouvirComentarios,
@@ -211,7 +211,7 @@ function traduzirStatus(status) {
 }
 
 export default function BuscarChamado() {
-  const { perfil, eAdmin, eVisitante } = usarAuth();
+  const { perfil, eAdmin, eVisitante } = useAuth();
 
   const [entrada, setEntrada] = useState("");
   const [carregando, setCarregando] = useState(false);

@@ -3,7 +3,7 @@ import styled from "styled-components";
 import TabelaChamados from "../../../componentes/admin/TabelaChamados";
 import ErrorBoundary from "../../../componentes/ui/ErrorBoundary";
 import { ouvirChamadosDaEscola } from "../../../servicos/firebase/chamadosServico";
-import { usarAuth } from "../../../contextos/AuthContexto";
+import { useAuth } from "../../../contextos/AuthContexto";
 import { CarregandoTela } from "../../../componentes/ui/CarregandoTela";
 
 const Container = styled.div`
@@ -24,7 +24,7 @@ const Header = styled.div`
 `;
 
 export default function DashboardAdmin() {
-  const { perfil, eAdmin } = usarAuth();
+  const { perfil, eAdmin } = useAuth();
   const [chamados, setChamados] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
