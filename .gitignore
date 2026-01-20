@@ -26,3 +26,9 @@ dist-ssr
 
 # variaveis de ambiente
 .env
+
+
+# arquivos compactados
+.zip
+.tar
+.gz

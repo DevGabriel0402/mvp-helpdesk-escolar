@@ -12,6 +12,7 @@ import DetalhesDoChamado from "../paginas/usuario/DetalhesDoChamado";
 
 import AreaAdmin from "../paginas/admin/AreaAdmin";
 import NotificacoesAdmin from "../paginas/admin/NotificacoesAdmin";
+import PerfilAdmin from "../paginas/admin/PerfilAdmin";
 
 // Protecao simples
 import RotaProtegida from "./RotaProtegida";
@@ -63,6 +64,7 @@ export default function Rotas() {
                 {/* Podemos manter a rota explicita admin tb se quiser */}
                 <Route path="admin" element={<AreaAdmin />} />
                 <Route path="notificacoes" element={<NotificacoesAdmin />} />
+                <Route path="perfil" element={<PerfilAdmin />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
