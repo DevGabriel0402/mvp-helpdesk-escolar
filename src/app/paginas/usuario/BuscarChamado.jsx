@@ -76,7 +76,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "rgba(155, 89, 182, 0.15)"; // Purple
       case "resolvido":
-        return "rgba(50, 255, 100, 0.15)";
+        return "rgba(128, 128, 128, 0.15)";
       default:
         return "rgba(255, 255, 255, 0.1)";
     }
@@ -91,7 +91,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "#9b59b6"; // Purple
       case "resolvido":
-        return "#32ff64";
+        return "#888";
       default:
         return "#ccc";
     }
@@ -211,7 +211,7 @@ function traduzirStatus(status) {
     case "andamento":
       return "Em Progresso";
     case "resolvido":
-      return "Resolvido";
+      return "Chamado Finalizado";
     default:
       return status;
   }

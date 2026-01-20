@@ -465,3 +465,9 @@ export async function confirmarPrioridadeEReceberChamado({
     });
   });
 }
+
+export async function excluirChamado(chamadoId) {
+  if (!chamadoId) throw new Error("chamadoId obrigatorio");
+  const docRef = doc(db, "chamados", chamadoId);
+  await deleteDoc(docRef);
+}

@@ -829,7 +829,7 @@ export default function LayoutApp() {
                 onClick={() => setNotifAberto(!notifAberto)}
                 title="Notificações"
               >
-                <FaBell size={20} />
+                <FaBell size={16} />
                 {naoLidas > 0 && <Badge>{naoLidas > 99 ? "99+" : naoLidas}</Badge>}
               </MobileBellBtn>
               <DropdownNotificacoes
@@ -839,10 +839,10 @@ export default function LayoutApp() {
             </div>
           )}
           <MobileThemeBtn onClick={alternarTema}>
-            <IconeTema size={20} />
+            <IconeTema size={16} />
           </MobileThemeBtn>
           <MobileLogoutBtn onClick={sair}>
-            <FaSignOutAlt size={20} />
+            <FaSignOutAlt size={16} />
           </MobileLogoutBtn>
         </HeaderActions>
       </MobileHeader>

@@ -18,6 +18,7 @@ import {
   FaArrowLeft,
   FaExternalLinkAlt,
   FaFlag,
+  FaSave,
 } from "react-icons/fa";
 import { Cartao } from "../../../componentes/ui/Cartao";
 import {
@@ -28,7 +29,6 @@ import {
   alterarPrioridadeChamadoAdmin,
   confirmarPrioridadeEReceberChamado,
   buscarChamadoPorId,
-  excluirChamadoAdmin,
 } from "../../../servicos/firebase/chamadosServico";
 import { useAuth } from "../../../contextos/AuthContexto";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
@@ -102,7 +102,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "rgba(155, 89, 182, 0.15)"; // Purple
       case "resolvido":
-        return "rgba(50, 255, 100, 0.15)";
+        return "rgba(128, 128, 128, 0.15)";
       default:
         return "rgba(255, 255, 255, 0.1)";
     }
@@ -117,7 +117,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "#9b59b6"; // Purple
       case "resolvido":
-        return "#32ff64";
+        return "#888";
       default:
         return "#ccc";
     }
@@ -480,117 +480,128 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
     <div
       style={{
         marginTop: 14,
-        padding: 12,
-        border: "1px solid rgba(255,255,255,0.12)",
-        borderRadius: 14,
+        padding: 16,
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 16,
+        background: theme.nome === "claro" ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)",
       }}
     >
-      <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Status</label>
-      <div style={{ marginTop: 6 }}>
-        <SelectPersonalizado
-          valor={status}
-          onChange={(val) => setStatus(val)}
-          opcoes={[
-            {
-              value: "aberto",
-              label: "Recebido",
-              icone: <FaExclamationCircle color="#32c8ff" />,
-              disabled: hierarquia["aberto"] < hierarquia[statusMaximo],
-            },
-            {
-              value: "andamento",
-              label: "Em andamento",
-              icone: <FaPlayCircle color="#ffc832" />,
-              disabled: hierarquia["andamento"] < hierarquia[statusMaximo],
-            },
-            {
-              value: "prodabel",
-              label: "Encaminhado para Prodabel",
-              icone: <FaExternalLinkAlt color="#9b59b6" />,
-              disabled: hierarquia["prodabel"] < hierarquia[statusMaximo],
-            },
-            {
-              value: "resolvido",
-              label: "Resolvido",
-              icone: <FaCheckCircle color="#32ff64" />,
-              disabled: hierarquia["resolvido"] < hierarquia[statusMaximo],
-            },
-          ]}
-          placeholder="Selecione o status"
-        />
+      {/* Linha de Status */}
+      <label style={{ fontSize: "0.8rem", fontWeight: 600, opacity: 0.6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        Status do Chamado
+      </label>
+      <div style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ flex: 1 }}>
+          <SelectPersonalizado
+            valor={status}
+            onChange={(val) => setStatus(val)}
+            opcoes={[
+              {
+                value: "aberto",
+                label: "Recebido",
+                icone: <FaExclamationCircle color="#32c8ff" />,
+                disabled: hierarquia["aberto"] < hierarquia[statusMaximo],
+              },
+              {
+                value: "andamento",
+                label: "Em andamento",
+                icone: <FaPlayCircle color="#ffc832" />,
+                disabled: hierarquia["andamento"] < hierarquia[statusMaximo],
+              },
+              {
+                value: "prodabel",
+                label: "Encaminhado para Prodabel",
+                icone: <FaExternalLinkAlt color="#9b59b6" />,
+                disabled: hierarquia["prodabel"] < hierarquia[statusMaximo],
+              },
+              {
+                value: "resolvido",
+                label: "Resolvido",
+                icone: <FaCheckCircle color="#32ff64" />,
+                disabled: hierarquia["resolvido"] < hierarquia[statusMaximo],
+              },
+            ]}
+            placeholder="Selecione o status"
+          />
+        </div>
+        <button
+          onClick={mudarStatus}
+          title="Salvar Status"
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: 12,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            background: "rgba(50, 200, 255, 0.15)",
+            border: "1px solid rgba(50, 200, 255, 0.3)",
+            color: "#32c8ff",
+            transition: "all 0.2s",
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.background = "rgba(50, 200, 255, 0.25)")}
+          onMouseOut={(e) => (e.currentTarget.style.background = "rgba(50, 200, 255, 0.15)")}
+        >
+          <FaSave size={18} />
+        </button>
       </div>
 
+      {/* Bloco de Notas */}
       <label
-        style={{ display: "block", marginTop: 12, fontSize: "0.85rem", fontWeight: 500 }}
+        style={{ display: "block", marginTop: 20, fontSize: "0.8rem", fontWeight: 600, opacity: 0.6, textTransform: 'uppercase', letterSpacing: 0.5 }}
       >
-        Nota / Atualização
+        Nova Atualização / Nota
       </label>
       <textarea
         value={nota}
         onChange={(e) => setNota(e.target.value)}
         rows={3}
-        placeholder="Escreva uma nota..."
+        placeholder="Escreva uma nota ou atualização..."
         style={{
           width: "100%",
-          marginTop: 6,
+          marginTop: 8,
           borderRadius: 14,
           padding: 12,
-          background: theme.nome === "claro" ? "#FBFCFD" : "rgba(0,0,0,0.3)",
+          background: theme.nome === "claro" ? "#fff" : "rgba(0,0,0,0.2)",
           color: "inherit",
-          border: "1px solid rgba(128,128,128,0.2)",
+          border: "1px solid rgba(128,128,128,0.15)",
           fontFamily: "inherit",
           resize: "none",
-          height: "100px",
+          height: "90px",
           outline: "none",
+          fontSize: '0.9rem'
         }}
       />
+      <BotaoNota onClick={salvarNota} style={{ marginTop: 10, width: '100%' }}>
+        Adicionar Nota
+      </BotaoNota>
 
-      <div
-        style={{
-          display: "grid",
-          gap: 10,
-          marginTop: 14,
-          gridTemplateColumns: "1fr 1fr",
-        }}
-      >
-        <BotaoNota onClick={salvarNota}>Adicionar Nota</BotaoNota>
+      {/* Botões de Ação Final */}
+      <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button
-          onClick={mudarStatus}
+          onClick={finalizar}
           style={{
-            padding: "10px",
-            borderRadius: 10,
+            width: "100%",
+            padding: "12px",
+            borderRadius: 12,
             cursor: "pointer",
             fontWeight: 600,
-            background: "rgba(50, 200, 255, 0.1)",
-            border: "1px solid rgba(50, 200, 255, 0.3)",
-            color: "#32c8ff",
+            background: "rgba(50, 255, 100, 0.1)",
+            border: "1px solid rgba(50, 255, 100, 0.2)",
+            color: "#32ff64",
             transition: "all 0.2s",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
           }}
-          onMouseOver={(e) => (e.target.style.background = "rgba(50, 200, 255, 0.2)")}
-          onMouseOut={(e) => (e.target.style.background = "rgba(50, 200, 255, 0.1)")}
+          onMouseOver={(e) => (e.currentTarget.style.background = "rgba(50, 255, 100, 0.15)")}
+          onMouseOut={(e) => (e.currentTarget.style.background = "rgba(50, 255, 100, 0.1)")}
         >
-          Salvar Status
+          <FaCheckCircle /> Finalizar Chamado
         </button>
       </div>
-      <button
-        onClick={finalizar}
-        style={{
-          width: "100%",
-          marginTop: 10,
-          padding: "10px",
-          borderRadius: 10,
-          cursor: "pointer",
-          fontWeight: 600,
-          background: "rgba(255, 77, 77, 0.1)",
-          border: "1px solid rgba(255, 77, 77, 0.3)",
-          color: "#ff4d4d",
-          transition: "all 0.2s",
-        }}
-        onMouseOver={(e) => (e.target.style.background = "rgba(255, 77, 77, 0.2)")}
-        onMouseOut={(e) => (e.target.style.background = "rgba(255, 77, 77, 0.1)")}
-      >
-        Finalizar Chamado
-      </button>
     </div>
   );
 }
@@ -708,7 +719,9 @@ export default function DetalhesDoChamado() {
               ? "Em Progresso"
               : ultimoStatus === "aberto"
                 ? "Recebido"
-                : ultimoStatus}
+                : ultimoStatus === "resolvido"
+                  ? "Chamado Finalizado"
+                  : ultimoStatus}
           </StatusBadge>
           <PrioridadeBadge $prio={chamado?.prioridade}>
             {chamado?.prioridade || "-"}
