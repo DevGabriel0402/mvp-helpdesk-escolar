@@ -183,9 +183,9 @@ const MobileLogoutBtn = styled.button`
   background: transparent;
   border: 1px solid rgba(255, 77, 77, 0.2);
   color: #ff4d4d;
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -199,9 +199,9 @@ const MobileThemeBtn = styled.button`
   background: transparent;
   border: 1px solid ${({ theme }) => theme.cores.borda};
   color: ${({ theme }) => theme.cores.texto};
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -216,9 +216,9 @@ const MobileBellBtn = styled.button`
   background: transparent;
   border: 1px solid ${({ theme }) => theme.cores.borda};
   color: ${({ theme }) => theme.cores.texto};
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -276,7 +276,7 @@ const TabBar = styled.div`
   position: fixed;
   left: 14px;
   right: 14px;
-  bottom: 24px;
+  bottom: 8px;
   z-index: 80;
 
   border-radius: 12px;
@@ -303,8 +303,8 @@ const TabBarInner = styled.div`
 const TabIndicator = styled(motion.div)`
   position: absolute;
   top: 50%;
-  height: 52px;
-  border-radius: 12px;
+  height: 68px;
+  border-radius: 16px;
   background: ${({ theme }) => theme.cores.destaque};
   z-index: 0;
   will-change: transform;
@@ -421,7 +421,7 @@ function MobileTabBar({ eVisitante }) {
             mass: 0.8,
           }}
           style={{
-            width: 52,
+            width: 68,
           }}
         />
 

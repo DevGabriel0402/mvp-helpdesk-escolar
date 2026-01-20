@@ -293,7 +293,7 @@ export default function BuscarChamado() {
     <Container>
       {/* Busca */}
       <Caixa>
-        <Titulo style={{ marginBottom: 8 }}>Buscar chamado</Titulo>
+        <h2 style={{ marginBottom: 8, marginTop: 0 }}>Buscar chamado</h2>
         <Ajuda>Digite o número ou protocolo (ex: HD-2026-000123).</Ajuda>
 
         <form onSubmit={buscar} style={{ marginTop: 16 }}>
