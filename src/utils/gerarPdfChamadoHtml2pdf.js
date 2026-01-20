@@ -148,9 +148,19 @@ function montarHtml({ chamado, painel, logoDataUrl }) {
   const nomePainel = painel?.nomePainel || "Helpdesk";
   const codigo = chamado?.codigoChamado || `#${String(chamado?.numeroChamado ?? "")}`;
 
-  const criadoEm = chamado?.criadoEm?.toDate
-    ? chamado.criadoEm.toDate().toLocaleString()
-    : chamado?.criadoEm || "";
+  // Helper para formatar qualquer tipo de data
+  const formatarDataPdf = (data) => {
+    if (!data) return "-";
+    let d = data;
+    if (data.toDate) d = data.toDate();
+    else if (typeof data === "number" || typeof data === "string") d = new Date(data);
+
+    if (isNaN(d.getTime())) return String(data);
+
+    return `${d.toLocaleDateString("pt-BR")} - ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
+  const criadoEm = formatarDataPdf(chamado?.criadoEm);
 
   const logoHtml = logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" />` : ``;
 

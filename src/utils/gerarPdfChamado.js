@@ -39,9 +39,19 @@ export async function gerarPdfChamado({ chamado, painel }) {
   // Dados
   const nomePainel = painel?.nomePainel || "Helpdesk";
   const codigo = chamado?.codigoChamado || `#${chamado?.numeroChamado || ""}`;
-  const criadoEm = chamado?.criadoEm?.toDate
-    ? chamado.criadoEm.toDate().toLocaleString("pt-BR")
-    : chamado?.criadoEm || "-";
+  // Helper para formatar qualquer tipo de data (Timestamp, Date, número ou string)
+  const formatarDataPdf = (data) => {
+    if (!data) return "-";
+    let d = data;
+    if (data.toDate) d = data.toDate();
+    else if (typeof data === "number" || typeof data === "string") d = new Date(data);
+
+    if (isNaN(d.getTime())) return String(data); // Fallback caso não seja data válida
+
+    return `${d.toLocaleDateString("pt-BR")} - ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
+  const criadoEm = formatarDataPdf(chamado?.criadoEm);
 
   // ========== HEADER ==========
   doc.setFillColor(...corHeader);
@@ -188,7 +198,11 @@ export async function gerarPdfChamado({ chamado, painel }) {
   );
 
   doc.setFontSize(8);
-  doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margin, y + 6);
+  doc.text(
+    `Gerado em ${new Date().toLocaleDateString("pt-BR")} - ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+    margin,
+    y + 6,
+  );
 
   // Salvar
   // Em vez de doc.save(nomeArquivo), abrimos em uma nova aba para o usuário escolher salvar
