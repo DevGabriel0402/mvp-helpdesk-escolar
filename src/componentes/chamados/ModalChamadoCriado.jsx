@@ -127,7 +127,7 @@ export default function ModalChamadoCriado({ aberto, aoFechar, dados, painel }) 
         descricao: dados?.descricao,
         localDoProblema: dados?.localDoProblema,
         categoriaId: dados?.categoriaLabel || dados?.categoriaId,
-        prioridade: dados?.prioridadeLabel || dados?.prioridade,
+        prioridade: dados?.prioridadeLabel || dados?.prioridade || null,
         status: dados?.status || "Aberto",
         criadoPorNome: dados?.solicitante || "Anônimo",
         criadoEm: dados?.dataCriacao,
@@ -166,7 +166,8 @@ export default function ModalChamadoCriado({ aberto, aoFechar, dados, painel }) 
                 {dados?.titulo} — {dados?.localDoProblema}
               </div>
               <TextoFraco style={{ marginTop: 6 }}>
-                Categoria: {dados?.categoriaLabel} • Prioridade: {dados?.prioridadeLabel}
+                Categoria: {dados?.categoriaLabel}
+                {dados?.prioridadeLabel && ` • Prioridade: ${dados?.prioridadeLabel}`}
               </TextoFraco>
             </div>
 

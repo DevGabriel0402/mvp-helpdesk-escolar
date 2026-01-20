@@ -81,7 +81,7 @@ export default function NovoChamado() {
   const [titulo, setTitulo] = useState("");
   const [localDoProblema, setLocalDoProblema] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
-  const [prioridade, setPrioridade] = useState("normal");
+  const [prioridade, setPrioridade] = useState("");
   const [descricao, setDescricao] = useState("");
   const [nomeSolicitante, setNomeSolicitante] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -91,10 +91,11 @@ export default function NovoChamado() {
   const [dadosModal, setDadosModal] = useState(null);
 
   const categorias = [
-    { value: "hardware", label: "Hardware" },
-    { value: "software", label: "Software" },
+    { value: "computador", label: "Computador" },
+    { value: "projetor", label: "Projetor" },
+    { value: "programa", label: "Programa" },
     { value: "rede", label: "Rede/Internet" },
-    { value: "outro", label: "Outro" },
+    { value: "outros", label: "Outros" },
   ];
   const prioridades = [
     { value: "baixa", label: "Baixa" },
@@ -145,8 +146,9 @@ export default function NovoChamado() {
         localDoProblema,
         categoriaLabel:
           categorias.find((o) => o.value === categoriaId)?.label || categoriaId,
-        prioridadeLabel:
-          prioridades.find((o) => o.value === prioridade)?.label || prioridade,
+        prioridadeLabel: prioridade
+          ? prioridades.find((o) => o.value === prioridade)?.label || prioridade
+          : null,
         solicitante: usuarioDados.nome,
       });
 
@@ -157,7 +159,7 @@ export default function NovoChamado() {
       setDescricao("");
       setLocalDoProblema("");
       setCategoriaId("");
-      setPrioridade("normal");
+      setPrioridade("");
     } catch (error) {
       console.error(error);
       toast.error("Erro ao criar chamado. Tente novamente.");
@@ -210,15 +212,17 @@ export default function NovoChamado() {
               placeholder="Selecione a categoria"
             />
           </div>
-          <div style={{ width: 140 }}>
-            <Label>Prioridade</Label>
-            <SelectPersonalizado
-              opcoes={prioridades}
-              valor={prioridade}
-              onChange={setPrioridade}
-              placeholder="Selecione"
-            />
-          </div>
+          {!eVisitante && (
+            <div style={{ width: 140 }}>
+              <Label>Prioridade</Label>
+              <SelectPersonalizado
+                opcoes={prioridades}
+                valor={prioridade}
+                onChange={setPrioridade}
+                placeholder="Selecione"
+              />
+            </div>
+          )}
         </Row>
 
         <Label>Descricao Detalhada</Label>

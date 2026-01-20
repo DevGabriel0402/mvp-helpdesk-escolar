@@ -100,6 +100,13 @@ export function ProvedorNotificacoes({ children }) {
     );
 
     const off = onSnapshot(q, (snap) => {
+      // Se não há chamados no Firestore, limpar notificações locais
+      if (snap.empty) {
+        salvarStorage({ uid, escolaId }, []);
+        setNotificacoes([]);
+        return;
+      }
+
       const atuais = carregarStorage({ uid, escolaId });
       const jaTem = new Set(atuais.map((x) => x.chamadoId));
       let mudou = false;

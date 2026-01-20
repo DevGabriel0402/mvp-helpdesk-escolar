@@ -51,9 +51,8 @@ function setCachedData(key, data) {
 
 // Helper interno
 function gerarCodigoChamado(numeroChamado) {
-  const ano = new Date().getFullYear();
-  const numeroFormatado = String(numeroChamado).padStart(6, "0");
-  return `HD-${ano}-${numeroFormatado}`;
+  const numeroFormatado = String(numeroChamado).padStart(5, "0");
+  return `OS N°${numeroFormatado}`;
 }
 
 export async function criarChamado({ escolaId, usuario, dadosChamado }) {
@@ -104,8 +103,8 @@ export async function criarChamado({ escolaId, usuario, dadosChamado }) {
       descricao: dadosChamado.descricao || "",
       localDoProblema: dadosChamado.localDoProblema || "",
 
-      categoriaId: dadosChamado.categoriaId || "geral",
-      prioridade: dadosChamado.prioridade || "normal",
+      categoriaId: dadosChamado.categoriaId || "outros",
+      prioridade: dadosChamado.prioridade || null,
       status: "aberto",
 
       responsavelUid: null,
@@ -377,4 +376,49 @@ export async function excluirChamadoAdmin(chamadoId) {
 
   const refChamado = doc(db, "chamados", chamadoId);
   await deleteDoc(refChamado);
+}
+
+// ===============================
+// Alterar prioridade (SOMENTE admin)
+// ===============================
+export async function alterarPrioridadeChamadoAdmin({
+  chamadoId,
+  novaPrioridade,
+  adminUid,
+  adminNome,
+}) {
+  const refChamado = doc(db, "chamados", chamadoId);
+  const refAtualizacoes = collection(db, "chamados", chamadoId, "atualizacoes");
+
+  const prioridadesValidas = ["baixa", "normal", "alta", "urgente"];
+  if (!prioridadesValidas.includes(novaPrioridade)) {
+    throw new Error(`Prioridade inválida: ${novaPrioridade}`);
+  }
+
+  await runTransaction(db, async (transacao) => {
+    const snap = await transacao.get(refChamado);
+    if (!snap.exists()) throw new Error("Chamado não encontrado.");
+
+    const atual = snap.data();
+    const prioridadeAtual = atual.prioridade || "normal";
+
+    // atualiza o documento principal
+    transacao.update(refChamado, {
+      prioridade: novaPrioridade,
+      atualizadoEm: serverTimestamp(),
+      ultimaAtividadeEm: serverTimestamp(),
+    });
+
+    // cria atualização (log)
+    const refNovaAtualizacao = doc(refAtualizacoes);
+    transacao.set(refNovaAtualizacao, {
+      tipo: "mudanca_prioridade",
+      de: prioridadeAtual,
+      para: novaPrioridade,
+      texto: "",
+      adminUid,
+      adminNome,
+      criadoEm: serverTimestamp(),
+    });
+  });
 }

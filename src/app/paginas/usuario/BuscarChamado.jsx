@@ -179,7 +179,13 @@ const Item = styled.div`
 
 function normalizarEntrada(entrada) {
   const v = (entrada || "").trim().toUpperCase();
+  // Suporta formato antigo HD-XXXX e novo OS N°XXXXX
   if (v.startsWith("HD-")) return { ticketCode: v };
+  if (v.startsWith("OS N°") || v.startsWith("OS N")) {
+    // Extrai somente números do código OS
+    const numero = v.replace(/\D/g, "");
+    if (numero) return { ticketNumber: Number(numero) };
+  }
   const somenteNumero = v.replace(/\D/g, "");
   if (somenteNumero) return { ticketNumber: Number(somenteNumero) };
   return {};
@@ -294,12 +300,12 @@ export default function BuscarChamado() {
       {/* Busca */}
       <Caixa>
         <h2 style={{ marginBottom: 8, marginTop: 0 }}>Buscar chamado</h2>
-        <Ajuda>Digite o número ou protocolo (ex: HD-2026-000123).</Ajuda>
+        <Ajuda>Digite o número ou protocolo (ex: OS N°00001).</Ajuda>
 
         <form onSubmit={buscar} style={{ marginTop: 16 }}>
           <div style={{ display: "grid", gap: 12 }}>
             <CampoTexto
-              placeholder="Ex: 123 ou HD-2026-000123"
+              placeholder="Ex: 1 ou OS N°00001"
               value={entrada}
               onChange={(e) => setEntrada(e.target.value)}
             />

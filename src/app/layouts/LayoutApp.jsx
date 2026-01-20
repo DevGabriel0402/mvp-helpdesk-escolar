@@ -210,6 +210,9 @@ const MobileHeader = styled.header`
   align-items: center;
   justify-content: space-between;
   padding: 18px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 
   border-bottom: 1px solid ${({ theme }) => theme.cores.borda};
   background: ${({ theme }) => theme.cores.vidro};

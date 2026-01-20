@@ -78,25 +78,22 @@ export async function gerarPdfChamado({ chamado, painel }) {
   doc.setTextColor(...corFraco);
   doc.text("Comprovante de abertura de chamado", textX, margin + 20);
 
-  // Caixa do código (lado direito)
-  const caixaW = 48;
-  const caixaH = 20;
+  // Caixa do código (lado direito) - maior para destacar a OS
+  const caixaW = 58;
+  const caixaH = 24;
   const caixaX = margin + contentWidth - caixaW - 6;
-  const caixaY = margin + 4;
+  const caixaY = margin + 2;
 
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(...corAzul);
   doc.setLineWidth(0.6);
   doc.roundedRect(caixaX, caixaY, caixaW, caixaH, 3, 3, "FD");
 
-  doc.setTextColor(...corFraco);
-  doc.setFontSize(7);
+  // Código da OS centralizado e com fonte maior
+  doc.setTextColor(...corTexto);
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("NÚMERO DO CHAMADO", caixaX + 4, caixaY + 7);
-
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text(codigo, caixaX + 4, caixaY + 15);
+  doc.text(codigo, caixaX + caixaW / 2, caixaY + 14, { align: "center" });
 
   // ========== CARD DE DETALHES ==========
   let y = margin + 36;
@@ -146,7 +143,7 @@ export async function gerarPdfChamado({ chamado, painel }) {
   doc.text("Prioridade:", margin + 65, metaY);
   doc.setTextColor(...corTexto);
   doc.setFont("helvetica", "normal");
-  doc.text(chamado?.prioridade || "-", margin + 90, metaY);
+  doc.text(chamado?.prioridade || "A confirmar", margin + 90, metaY);
 
   doc.setTextColor(...corFraco);
   doc.setFont("helvetica", "bold");

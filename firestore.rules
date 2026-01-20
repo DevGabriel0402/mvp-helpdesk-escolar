@@ -62,7 +62,7 @@ service cloud.firestore {
         && d.localDoProblema is string
 
         && d.categoriaId is string
-        && d.prioridade in ["baixa", "normal", "alta", "urgente"]
+        && (d.prioridade in ["baixa", "normal", "alta", "urgente"] || d.prioridade == null)
         && d.status in ["aberto", "andamento", "resolvido"]
 
         && (d.responsavelUid is string || d.responsavelUid == null)
