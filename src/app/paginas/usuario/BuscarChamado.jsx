@@ -428,17 +428,31 @@ export default function BuscarChamado() {
                         <div
                           style={{ fontWeight: 500, fontSize: "0.9rem", marginBottom: 2 }}
                         >
-                          {item.tipo === "criacao"
-                            ? "Chamado Criado"
-                            : item.adminNome || "Sistema"}
-                          {item.tipo === "mudanca_status" &&
-                            item.para === "prodabel" &&
-                            " encaminhou para Prodabel"}
-                          {item.tipo === "mudanca_status" &&
-                            item.para !== "prodabel" &&
-                            " alterou o status"}
-                          {item.tipo === "mudanca_prioridade" && " alterou a prioridade"}
-                          {item.tipo === "nota" && " adicionou uma nota"}
+                          {(() => {
+                            const formatarValor = (v) => {
+                              const nomes = {
+                                aberto: "Recebido",
+                                andamento: "Em Andamento",
+                                prodabel: "Prodabel",
+                                resolvido: "Resolvido",
+                                baixa: "Baixa",
+                                normal: "Normal",
+                                alta: "Alta",
+                                urgente: "Urgente",
+                              };
+                              return nomes[v] || v;
+                            };
+
+                            if (item.tipo === "criacao") return "Chamado Criado";
+                            if (item.tipo === "mudanca_status") {
+                              return `${item.adminNome || "Sistema"} alterou o status para ${formatarValor(item.para)}`;
+                            }
+                            if (item.tipo === "mudanca_prioridade") {
+                              return `${item.adminNome || "Sistema"} alterou a prioridade para ${formatarValor(item.para)}`;
+                            }
+                            return item.adminNome || "Sistema";
+                          })()}
+                          {item.tipo === "nota" && ""}
                         </div>
                         <div style={{ fontSize: "0.75rem", opacity: 0.5, marginBottom: 6 }}>
                           {formatarData(item.criadoEm)}
@@ -446,19 +460,37 @@ export default function BuscarChamado() {
 
                         {item.tipo === "mudanca_prioridade" && (
                           <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
-                            Prioridade: {item.de} → <strong>{item.para}</strong>
+                            {(() => {
+                              const nomes = { baixa: "Baixa", normal: "Normal", alta: "Alta", urgente: "Urgente" };
+                              const de = nomes[item.de] || item.de;
+                              const para = nomes[item.para] || item.para;
+                              return (
+                                <>
+                                  {de} → <strong>{para}</strong>
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                         {item.tipo === "mudanca_status" && (
                           <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
-                            {item.de === "aberto" ? "Recebido" : item.de} →{" "}
-                            <strong>
-                              {item.para === "aberto"
-                                ? "Recebido"
-                                : item.para === "prodabel"
-                                  ? "Prodabel"
-                                  : item.para}
-                            </strong>
+                            {(() => {
+                              const nomes = { aberto: "Recebido", andamento: "Em Andamento", prodabel: "Prodabel", resolvido: "Resolvido" };
+                              const para = nomes[item.para] || item.para;
+                              if (item.de === "aberto" && item.para === "aberto") {
+                                return (
+                                  <>
+                                    Criado → <strong>{para}</strong>
+                                  </>
+                                );
+                              }
+                              const de = nomes[item.de] || item.de;
+                              return (
+                                <>
+                                  {de} → <strong>{para}</strong>
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                         {item.texto && (

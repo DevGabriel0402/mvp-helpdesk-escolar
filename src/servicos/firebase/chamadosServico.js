@@ -124,22 +124,6 @@ export async function criarChamado({ escolaId, usuario, dadosChamado }) {
     };
   });
 
-  if (usuario.tipo === "admin") {
-    try {
-      await addDoc(collection(db, "chamados", resultado.id, "atualizacoes"), {
-        tipo: "nota",
-        texto: "Chamado criado",
-        adminUid: usuario.uid,
-        adminNome: usuario.nome,
-        criadoEm: serverTimestamp(),
-        de: null,
-        para: null,
-      });
-    } catch (e) {
-      console.warn("Erro ao criar update inicial", e);
-    }
-  }
-
   return resultado;
 }
 
@@ -416,6 +400,53 @@ export async function alterarPrioridadeChamadoAdmin({
       de: prioridadeAtual,
       para: novaPrioridade,
       texto: "",
+      adminUid,
+      adminNome,
+      criadoEm: serverTimestamp(),
+    });
+  });
+}
+
+// ===============================
+// Confirmar Prioridade + "Receber" Chamado (Status aberto)
+// ===============================
+export async function confirmarPrioridadeEReceberChamado({
+  chamadoId,
+  novaPrioridade,
+  adminUid,
+  adminNome,
+}) {
+  const refChamado = doc(db, "chamados", chamadoId);
+  const refAtualizacoes = collection(db, "chamados", chamadoId, "atualizacoes");
+
+  await runTransaction(db, async (transacao) => {
+    const snap = await transacao.get(refChamado);
+    if (!snap.exists()) throw new Error("Chamado nao encontrado.");
+
+    // 1) Atualiza prioridade e garante status "aberto" (Recebido)
+    transacao.update(refChamado, {
+      prioridade: novaPrioridade,
+      status: "aberto",
+      atualizadoEm: serverTimestamp(),
+      ultimaAtividadeEm: serverTimestamp(),
+    });
+
+    // 2) Adiciona nota: "Prioridade: [Valor]"
+    const refNotaPrio = doc(refAtualizacoes);
+    transacao.set(refNotaPrio, {
+      tipo: "nota",
+      texto: `Prioridade: ${novaPrioridade.charAt(0).toUpperCase() + novaPrioridade.slice(1)}`,
+      adminUid,
+      adminNome,
+      criadoEm: serverTimestamp(),
+    });
+
+    // 3) Log de status para transição visual no front
+    const refStatusLog = doc(refAtualizacoes);
+    transacao.set(refStatusLog, {
+      tipo: "mudanca_status",
+      de: "aberto",
+      para: "aberto",
       adminUid,
       adminNome,
       criadoEm: serverTimestamp(),
