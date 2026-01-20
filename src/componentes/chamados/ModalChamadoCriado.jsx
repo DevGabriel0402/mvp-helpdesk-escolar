@@ -134,7 +134,7 @@ export default function ModalChamadoCriado({ aberto, aoFechar, dados, painel }) 
       };
 
       await gerarPdfChamado({ chamado: chamadoParaPdf, painel });
-      toast.success("PDF baixado com sucesso!");
+      toast.success("PDF gerado com sucesso!");
     } catch (e) {
       console.error(e);
       toast.error("Erro ao gerar PDF.");

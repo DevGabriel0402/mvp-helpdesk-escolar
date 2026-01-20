@@ -239,7 +239,7 @@ export async function gerarPdfChamadoHtml2pdf({ chamado, painel }) {
   const nomeArquivo = `${(painel?.nomePainel || "helpdesk").replace(/\s+/g, "_")}_${chamado?.codigoChamado || "chamado"}.pdf`;
 
   try {
-    await html2pdf()
+    const pdfUrl = await html2pdf()
       .from(container)
       .set({
         margin: 0,
@@ -255,7 +255,9 @@ export async function gerarPdfChamadoHtml2pdf({ chamado, painel }) {
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       })
-      .save();
+      .outputPdf("bloburl");
+
+    window.open(pdfUrl, "_blank");
   } finally {
     document.body.removeChild(container);
   }

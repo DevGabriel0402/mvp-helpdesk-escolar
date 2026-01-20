@@ -191,6 +191,7 @@ export async function gerarPdfChamado({ chamado, painel }) {
   doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margin, y + 6);
 
   // Salvar
-  const nomeArquivo = `${(painel?.nomePainel || "helpdesk").replace(/\s+/g, "_")}_${chamado?.codigoChamado || "chamado"}.pdf`;
-  doc.save(nomeArquivo);
+  // Em vez de doc.save(nomeArquivo), abrimos em uma nova aba para o usuário escolher salvar
+  const blobUrl = doc.output("bloburl");
+  window.open(blobUrl, "_blank");
 }
