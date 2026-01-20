@@ -113,6 +113,8 @@ const PrioridadeBadge = styled.span`
         return "rgba(255, 200, 50, 0.15)";
       case "baixa":
         return "rgba(50, 200, 255, 0.15)";
+      case "urgente":
+        return "rgba(163, 58, 255, 0.15)";
       default:
         return "rgba(255, 255, 255, 0.1)";
     }
@@ -126,6 +128,8 @@ const PrioridadeBadge = styled.span`
         return "#ffc832";
       case "baixa":
         return "#32c8ff";
+      case "urgente":
+        return "#b24fff";
       default:
         return "#ccc";
     }
