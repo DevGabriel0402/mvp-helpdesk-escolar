@@ -1,0 +1,371 @@
+import { useState, useEffect } from "react";
+import styled from "styled-components";
+import { toast } from "react-toastify";
+import { FaRegStickyNote, FaExchangeAlt, FaPlusCircle, FaMapMarkerAlt, FaUser, FaRegCalendarAlt, FaCommentDots, FaExclamationCircle, FaPlayCircle, FaCheckCircle, FaExternalLinkAlt } from "react-icons/fa";
+import { CampoTexto } from "../../../componentes/ui/CampoTexto";
+import { Botao } from "../../../componentes/ui/Botao";
+import { usarAuth } from "../../../contextos/AuthContexto";
+import { buscarChamadoPorNumero, ouvirComentarios, ouvirAtualizacoes } from "../../../servicos/firebase/chamadosServico";
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 100%;
+`;
+
+const Caixa = styled.div`
+  background: ${({ theme }) => theme.cores.fundo2};
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  border-radius: 8px;
+  padding: 20px 24px;
+`;
+
+const Ajuda = styled.p`
+  margin: 0;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.cores.textoFraco};
+`;
+
+const CabecalhoChamado = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+`;
+
+const CodigoChamado = styled.span`
+  font-family: monospace;
+  font-weight: 700;
+  color: ${({ theme }) => theme.cores.destaque};
+  font-size: 1rem;
+`;
+
+const StatusBadge = styled.span`
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  
+  background: ${({ $status }) => {
+        switch ($status) {
+            case "aberto": return "rgba(50, 200, 255, 0.15)";
+            case "andamento": return "rgba(255, 200, 50, 0.15)";
+            case "prodabel": return "rgba(155, 89, 182, 0.15)"; // Purple
+            case "resolvido": return "rgba(50, 255, 100, 0.15)";
+            default: return "rgba(255, 255, 255, 0.1)";
+        }
+    }};
+
+  color: ${({ $status }) => {
+        switch ($status) {
+            case "aberto": return "#32c8ff";
+            case "andamento": return "#ffc832";
+            case "prodabel": return "#9b59b6"; // Purple
+            case "resolvido": return "#32ff64";
+            default: return "#ccc";
+        }
+    }};
+`;
+
+const PrioridadeBadge = styled.span`
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  
+  background: ${({ $prio }) => {
+        switch ($prio) {
+            case "alta": return "rgba(255, 77, 77, 0.15)";
+            case "media": return "rgba(255, 200, 50, 0.15)";
+            case "baixa": return "rgba(50, 200, 255, 0.15)";
+            default: return "rgba(255, 255, 255, 0.1)";
+        }
+    }};
+
+  color: ${({ $prio }) => {
+        switch ($prio) {
+            case "alta": return "#ff4d4d";
+            case "media": return "#ffc832";
+            case "baixa": return "#32c8ff";
+            default: return "#ccc";
+        }
+    }};
+`;
+
+const Titulo = styled.h2`
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+`;
+
+const InfoMeta = styled.div`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.cores.textoFraco};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+`;
+
+const Descricao = styled.p`
+  margin: 16px 0 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.cores.texto};
+  padding-top: 16px;
+  border-top: 1px solid ${({ theme }) => theme.cores.borda};
+`;
+
+const SecaoTitulo = styled.h3`
+  margin: 0 0 16px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.cores.textoFraco};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const Lista = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: ${({ theme }) => theme.cores.borda};
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const Item = styled.div`
+  padding: 14px 16px;
+  background: ${({ theme }) => theme.cores.fundo2};
+`;
+
+function normalizarEntrada(entrada) {
+    const v = (entrada || "").trim().toUpperCase();
+    if (v.startsWith("HD-")) return { ticketCode: v };
+    const somenteNumero = v.replace(/\D/g, "");
+    if (somenteNumero) return { ticketNumber: Number(somenteNumero) };
+    return {};
+}
+
+function formatarData(valor) {
+    if (!valor) return "";
+    const d = valor.toDate ? valor.toDate() : new Date(valor);
+    return d.toLocaleString("pt-BR");
+}
+
+function pegarMillis(data) {
+    if (!data) return 0;
+    if (typeof data.toMillis === "function") return data.toMillis();
+    return 0;
+}
+
+function traduzirStatus(status) {
+    switch (status) {
+        case "aberto": return "Aberto";
+        case "andamento": return "Em Progresso";
+        case "resolvido": return "Resolvido";
+        default: return status;
+    }
+}
+
+export default function BuscarChamado() {
+    const { perfil, uid, eAdmin } = usarAuth();
+
+    const [entrada, setEntrada] = useState("");
+    const [carregando, setCarregando] = useState(false);
+    const [chamado, setChamado] = useState(null);
+    const [atualizacoes, setAtualizacoes] = useState([]);
+    const [comentarios, setComentarios] = useState([]);
+
+    useEffect(() => {
+        if (!chamado?.id) return;
+
+        const off1 = ouvirAtualizacoes(chamado.id, setAtualizacoes);
+        const off2 = ouvirComentarios(chamado.id, setComentarios);
+
+        return () => {
+            off1?.();
+            off2?.();
+        };
+    }, [chamado?.id]);
+
+    const timeline = (() => {
+        const tudo = [...comentarios, ...atualizacoes];
+
+        if (chamado && chamado.criadoEm) {
+            tudo.push({
+                id: 'inicio',
+                _tipoItem: 'atualizacao',
+                tipo: 'criacao',
+                texto: 'Chamado criado',
+                adminNome: chamado.criadoPorNome || 'Sistema',
+                criadoEm: chamado.criadoEm
+            });
+        }
+
+        tudo.sort((a, b) => pegarMillis(a.criadoEm) - pegarMillis(b.criadoEm));
+        return tudo;
+    })();
+
+    async function buscar(e) {
+        e.preventDefault();
+
+        const { ticketNumber, ticketCode } = normalizarEntrada(entrada);
+
+        if (!ticketNumber && !ticketCode) {
+            toast.error("Digite o numero do chamado ou o protocolo (ex: HD-2026-000123).");
+            return;
+        }
+
+        setCarregando(true);
+        try {
+            const uidFiltro = (!eAdmin && uid) ? uid : null;
+
+            const resultado = await buscarChamadoPorNumero({
+                escolaId: perfil?.escolaId || "escola_padrao",
+                ticketNumber,
+                ticketCode,
+                uid: uidFiltro
+            });
+
+            if (!resultado) {
+                toast.info("Nenhum chamado encontrado com esse numero.");
+                setChamado(null);
+                return;
+            }
+
+            const eDono = resultado.criadoPorUid === uid;
+
+            if (!eDono && !eAdmin) {
+                toast.error("Voce nao tem permissao para ver esse chamado.");
+                setChamado(null);
+                return;
+            }
+
+            setChamado(resultado);
+            toast.success("Chamado encontrado!");
+        } catch (err) {
+            console.error(err);
+            toast.error("Erro ao buscar chamado.");
+            setChamado(null);
+        } finally {
+            setCarregando(false);
+        }
+    }
+
+    return (
+        <Container>
+            {/* Busca */}
+            <Caixa>
+                <Titulo style={{ marginBottom: 8 }}>Buscar chamado</Titulo>
+                <Ajuda>
+                    Digite o número ou protocolo (ex: HD-2026-000123).
+                </Ajuda>
+
+                <form onSubmit={buscar} style={{ marginTop: 16 }}>
+                    <div style={{ display: 'grid', gap: 12 }}>
+                        <CampoTexto
+                            placeholder="Ex: 123 ou HD-2026-000123"
+                            value={entrada}
+                            onChange={(e) => setEntrada(e.target.value)}
+                        />
+                        <Botao $larguraTotal disabled={carregando}>
+                            {carregando ? "Buscando..." : "Buscar"}
+                        </Botao>
+                    </div>
+                </form>
+            </Caixa>
+
+            {/* Resultado */}
+            {chamado && (
+                <Caixa>
+                    <CabecalhoChamado>
+                        <CodigoChamado>{chamado?.codigoChamado || `#${chamado.numeroChamado}`}</CodigoChamado>
+                        <StatusBadge $status={chamado.status}>
+                            {chamado.status === 'andamento' ? 'Em Progresso' : (chamado.status === 'aberto' ? 'Recebido' : chamado.status)}
+                        </StatusBadge>
+                        <PrioridadeBadge $prio={chamado.prioridade}>{chamado.prioridade}</PrioridadeBadge>
+                    </CabecalhoChamado>
+
+                    <Titulo>{chamado.titulo}</Titulo>
+
+                    <InfoMeta>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <FaMapMarkerAlt /> {chamado.localDoProblema || 'Local não definido'}
+                        </span>
+                        <span>•</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <FaUser /> {chamado.criadoPorNome || 'Anônimo'}
+                        </span>
+                        <span>•</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <FaRegCalendarAlt /> {formatarData(chamado.criadoEm)}
+                        </span>
+                    </InfoMeta>
+
+                    {chamado.descricao && (
+                        <Descricao>{chamado.descricao}</Descricao>
+                    )}
+
+                    {/* Timeline */}
+                    <SecaoTitulo style={{ marginTop: 24 }}>Histórico</SecaoTitulo>
+                    <Lista>
+                        {timeline.length === 0 ? (
+                            <Item style={{ textAlign: 'center', opacity: 0.5 }}>Nenhuma atividade registrada.</Item>
+                        ) : (
+                            timeline.map((item) => {
+                                if (item._tipoItem === "atualizacao") {
+                                    return (
+                                        <Item key={item.id} style={{ borderLeft: '3px solid rgba(255,255,255,0.2)' }}>
+                                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                                {item.tipo === 'criacao' && <FaPlusCircle />}
+                                                {item.tipo === 'mudanca_status' && (
+                                                    <>
+                                                        {item.para === 'aberto' && <FaExclamationCircle color="#32c8ff" />}
+                                                        {item.para === 'andamento' && <FaPlayCircle color="#ffc832" />}
+                                                        {item.para === 'prodabel' && <FaExternalLinkAlt color="#9b59b6" />}
+                                                        {item.para === 'resolvido' && <FaCheckCircle color="#32ff64" />}
+                                                        {!['aberto', 'andamento', 'prodabel', 'resolvido'].includes(item.para) && <FaExchangeAlt />}
+                                                    </>
+                                                )}
+                                                {item.tipo === 'nota' && <FaRegStickyNote />}
+                                                {formatarData(item.criadoEm)}
+                                            </div>
+                                            <div style={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                                                {item.tipo === 'criacao' ? 'Chamado Criado' : (item.adminNome || "Admin")}
+                                                {item.tipo === 'mudanca_status' && ' alterou o status'}
+                                                {item.tipo === 'nota' && ' adicionou uma nota'}
+                                            </div>
+                                            {item.tipo === "mudanca_status" && (
+                                                <div style={{ marginTop: 4, fontSize: '0.8rem', opacity: 0.7 }}>
+                                                    {item.de || '...'} → <strong>{item.para}</strong>
+                                                </div>
+                                            )}
+                                            {item.texto && <div style={{ marginTop: 6, fontSize: '0.85rem', opacity: 0.8 }}>{item.texto}</div>}
+                                        </Item>
+                                    );
+                                }
+
+                                return (
+                                    <Item key={item.id}>
+                                        <div style={{ fontSize: '0.75rem', opacity: 0.5, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <FaCommentDots /> {formatarData(item.criadoEm)}
+                                        </div>
+                                        <div style={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                                            {item.nome} <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>({item.papel})</span>
+                                        </div>
+                                        <div style={{ marginTop: 6, fontSize: '0.85rem', opacity: 0.9 }}>{item.mensagem}</div>
+                                    </Item>
+                                );
+                            })
+                        )}
+                    </Lista>
+                </Caixa>
+            )}
+        </Container>
+    );
+}

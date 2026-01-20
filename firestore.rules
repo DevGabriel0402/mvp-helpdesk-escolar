@@ -1,0 +1,231 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaLogado() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+
+    function eAnonimo() {
+      return estaLogado()
+        && request.auth.token.firebase != null
+        && request.auth.token.firebase.sign_in_provider == "anonymous";
+    }
+
+    function refAdmin() {
+      return /databases/$(database)/documents/usuarios/$(uid());
+    }
+
+    function temDocAdmin() { return estaLogado() && exists(refAdmin()); }
+    function admin() { return get(refAdmin()).data; }
+    function eAdmin() { return temDocAdmin() && admin().papel == "admin"; }
+    function escolaDoAdmin() { return eAdmin() ? admin().escolaId : null; }
+
+    function escolaPermitida(escolaId) {
+      // Permite acesso a escola_padrao para usuários logados (incluindo anônimos)
+      // OU para admins acessando sua própria escola
+      return (escolaId == "escola_padrao" && estaLogado())
+        || (eAdmin() && escolaId == escolaDoAdmin());
+    }
+
+    function refChamado(chamadoId) {
+      return /databases/$(database)/documents/chamados/$(chamadoId);
+    }
+    function existeChamado(chamadoId) { return exists(refChamado(chamadoId)); }
+    function chamado(chamadoId) { return get(refChamado(chamadoId)).data; }
+
+    function podeLerChamado(dadosChamado) {
+      return (eAdmin() && escolaPermitida(dadosChamado.escolaId))
+        || (estaLogado() && dadosChamado.criadoPorUid == uid());
+    }
+
+    function validacaoChamadoCriacao(d) {
+      return d.escolaId is string
+        && d.numeroChamado is int
+        && d.codigoChamado is string
+
+        && d.criadoPorUid is string
+        && d.criadoPorNome is string
+        && d.criadoPorTipo in ["visitante", "admin", "usuario"]
+        && (d.criadoPorEmail is string || d.criadoPorEmail == null)
+
+        && d.titulo is string
+        && d.descricao is string
+        && d.localDoProblema is string
+
+        && d.categoriaId is string
+        && d.prioridade in ["baixa", "normal", "alta", "urgente"]
+        && d.status in ["aberto", "andamento", "resolvido"]
+
+        && (d.responsavelUid is string || d.responsavelUid == null)
+        && d.anexos is list;
+    }
+
+    // ===== escolas =====
+    match /escolas/{escolaId} {
+      allow read: if estaLogado() && escolaPermitida(escolaId);
+      allow create, update, delete: if eAdmin() && escolaPermitida(escolaId);
+    }
+
+    // ===== usuarios (APENAS ADMIN) =====
+    match /usuarios/{usuarioId} {
+      // admin precisa ler o proprio doc para descobrir o papel
+      allow read: if estaLogado() && (
+        usuarioId == uid()
+        || (eAdmin() && resource.data.escolaId == escolaDoAdmin())
+      );
+
+      allow create: if estaLogado()
+        && usuarioId == uid()
+        && request.resource.data.papel == "admin"
+        && request.resource.data.escolaId is string;
+
+      allow update: if estaLogado() && (
+        usuarioId == uid()
+        || (eAdmin() && resource.data.escolaId == escolaDoAdmin())
+      );
+
+      allow delete: if false;
+
+      // visitantes anônimos não têm notificações
+      match /notificacoes/{notificacaoId} {
+        allow read, create, update, delete: if false;
+      }
+
+      match /configuracoes/{docId} {
+        // Somente o próprio admin pode ler/escrever suas configuracoes
+        allow read, create, update: if estaLogado() && usuarioId == uid();
+        allow delete: if false;
+      }
+    }
+
+    // ===== contadores =====
+    match /contadores/{escolaId} {
+
+      // Permite leitura para qualquer usuário logado (incluindo anônimos)
+      allow read: if estaLogado() && escolaPermitida(escolaId);
+
+      // CORREÇÃO CRÍTICA: Simplifica a validação para escola_padrao
+      allow create, update: if estaLogado()
+        && request.resource.data.ultimoNumeroChamado is int
+        && (
+          // Para escola_padrao: qualquer usuário logado pode criar/atualizar
+          (escolaId == "escola_padrao" && 
+            (
+              // Criação inicial
+              !exists(/databases/$(database)/documents/contadores/$(escolaId))
+              ||
+              // Incremento válido
+              (resource.data.ultimoNumeroChamado is int
+                && request.resource.data.ultimoNumeroChamado == resource.data.ultimoNumeroChamado + 1)
+            )
+          )
+          ||
+          // Para outras escolas: apenas admins da escola
+          (escolaId != "escola_padrao" 
+            && eAdmin() 
+            && escolaDoAdmin() == escolaId
+            && (
+              !exists(/databases/$(database)/documents/contadores/$(escolaId))
+              ||
+              (resource.data.ultimoNumeroChamado is int
+                && request.resource.data.ultimoNumeroChamado == resource.data.ultimoNumeroChamado + 1)
+            )
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    // ===== chamados =====
+    match /chamados/{chamadoId} {
+
+      allow read: if estaLogado() && podeLerChamado(resource.data);
+
+      // Permite criação para:
+      // - Usuários anônimos (visitante) na escola_padrao
+      // - Usuários autenticados não-admin (visitante/usuario) na escola_padrao
+      // - Admins em sua própria escola
+      allow create: if estaLogado()
+        && request.resource.data.criadoPorUid == uid()
+        && validacaoChamadoCriacao(request.resource.data)
+        && (
+          // Visitante/usuário na escola_padrao
+          (
+            request.resource.data.escolaId == "escola_padrao"
+            && (request.resource.data.criadoPorTipo == "visitante" || request.resource.data.criadoPorTipo == "usuario")
+          )
+          || 
+          // Admin na sua escola
+          (
+            eAdmin() 
+            && request.resource.data.escolaId == escolaDoAdmin()
+            && request.resource.data.criadoPorTipo == "admin"
+          )
+        );
+
+      allow update: if estaLogado() && (
+        (eAdmin()
+          && escolaPermitida(resource.data.escolaId)
+          && request.resource.data.escolaId == resource.data.escolaId
+          && request.resource.data.numeroChamado == resource.data.numeroChamado
+          && request.resource.data.codigoChamado == resource.data.codigoChamado
+          && request.resource.data.criadoPorUid == resource.data.criadoPorUid
+        )
+        ||
+        (
+          resource.data.criadoPorUid == uid()
+          && request.resource.data.escolaId == resource.data.escolaId
+          && request.resource.data.numeroChamado == resource.data.numeroChamado
+          && request.resource.data.codigoChamado == resource.data.codigoChamado
+
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.prioridade == resource.data.prioridade
+          && request.resource.data.categoriaId == resource.data.categoriaId
+          && request.resource.data.responsavelUid == resource.data.responsavelUid
+        )
+      );
+
+      allow delete: if eAdmin() && escolaPermitida(resource.data.escolaId);
+
+      match /comentarios/{comentarioId} {
+        allow read: if estaLogado() && podeLerChamado(chamado(chamadoId));
+
+        allow create: if estaLogado()
+          && existeChamado(chamadoId)
+          && (
+            (eAdmin() && chamado(chamadoId).escolaId == escolaDoAdmin())
+            || (chamado(chamadoId).criadoPorUid == uid())
+          )
+          && request.resource.data.uid == uid()
+          && request.resource.data.nome is string
+          && request.resource.data.papel in ["admin", "visitante"]
+          && request.resource.data.mensagem is string
+          && request.resource.data.anexos is list;
+
+        allow update, delete: if eAdmin()
+          && existeChamado(chamadoId)
+          && chamado(chamadoId).escolaId == escolaDoAdmin();
+      }
+
+      match /atualizacoes/{atualizacaoId} {
+        allow read: if estaLogado() && podeLerChamado(chamado(chamadoId));
+
+        allow create: if eAdmin()
+          && existeChamado(chamadoId)
+          && chamado(chamadoId).escolaId == escolaDoAdmin()
+          && request.resource.data.tipo in [
+            "mudanca_status", "atribuido", "mudanca_prioridade", "mudanca_categoria", "nota"
+          ]
+          && (request.resource.data.de is string || request.resource.data.de == null)
+          && (request.resource.data.para is string || request.resource.data.para == null)
+          && request.resource.data.texto is string
+          && request.resource.data.adminUid == uid()
+          && request.resource.data.adminNome is string;
+
+        allow update, delete: if eAdmin()
+          && existeChamado(chamadoId)
+          && chamado(chamadoId).escolaId == escolaDoAdmin();
+      }
+    }
+  }
+}
