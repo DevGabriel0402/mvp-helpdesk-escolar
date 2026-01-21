@@ -44,4 +44,22 @@ export const GlobalStyle = createGlobalStyle`
   .Toastify__close-button {
     color: ${({ theme }) => theme.cores.textoFraco};
   }
+
+  /* Melhoria de Input Date no iOS/Safari */
+  input[type="date"] {
+    -webkit-appearance: none;
+    min-height: 44px; /* Confortável para touch no iOS */
+    display: flex;
+    align-items: center;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    height: 1.2em;
+    min-height: 1.2em;
+    padding: 0;
+    margin: 0;
+  }
 `;
