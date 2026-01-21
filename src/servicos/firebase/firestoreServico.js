@@ -1,10 +1,17 @@
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 export async function buscarPerfilDoUsuario(uid) {
     const ref = doc(db, "usuarios", uid);
     const snap = await getDoc(ref);
     return snap.exists() ? snap.data() : null;
+}
+
+export function observarPerfilUsuario(uid, callback) {
+    const ref = doc(db, "usuarios", uid);
+    return onSnapshot(ref, (snap) => {
+        callback(snap.exists() ? snap.data() : null);
+    });
 }
 
 // Opcional (so se voce quiser criar doc admin via app)

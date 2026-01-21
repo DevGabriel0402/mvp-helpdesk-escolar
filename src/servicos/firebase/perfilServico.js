@@ -28,3 +28,8 @@ export async function salvarPerfilBasico(uid, dados) {
   await setDoc(ref, payload, { merge: true });
   salvarPerfilBasicoLocal(uid, dados);
 }
+
+export async function salvarNomeAdmin(uid, novoNome) {
+  const ref = doc(db, "usuarios", uid);
+  await setDoc(ref, { nome: novoNome, atualizadoEm: serverTimestamp() }, { merge: true });
+}

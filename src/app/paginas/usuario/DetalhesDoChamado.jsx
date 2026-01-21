@@ -921,12 +921,12 @@ export default function DetalhesDoChamado() {
                             return `${item.adminNome || "Sistema"} alterou o status para ${formatarValor(item.para)}`;
                           }
                           if (item.tipo === "mudanca_prioridade") {
-                            return `O administrador atualizou a prioridade para ${formatarValor(item.para)}`;
+                            return `${item.adminNome || "O administrador"} atualizou a prioridade para ${formatarValor(item.para)}`;
                           }
                           // Fallback para logs antigos salvos como nota
                           if (item.tipo === "nota" && item.texto?.startsWith("Prioridade:")) {
                             const val = item.texto.split(": ")[1];
-                            return `O administrador atualizou a prioridade para ${val}`;
+                            return `${item.adminNome || "O administrador"} atualizou a prioridade para ${val}`;
                           }
                           return item.adminNome || item.nome || "Sistema";
                         })()}

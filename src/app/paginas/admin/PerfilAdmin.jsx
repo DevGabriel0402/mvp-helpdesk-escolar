@@ -8,6 +8,9 @@ import {
   FaEnvelope,
   FaBuilding,
   FaWifi,
+  FaPencilAlt,
+  FaCheck,
+  FaTimes,
 } from "react-icons/fa";
 import { useAuth } from "../../../contextos/AuthContexto";
 import {
@@ -18,6 +21,7 @@ import {
   buscarPerfilBasico,
   carregarPerfilBasicoLocal,
   salvarPerfilBasico,
+  salvarNomeAdmin,
 } from "../../../servicos/firebase/perfilServico";
 import { salvarPainelPublico } from "../../../servicos/firebase/painelServico";
 import { aplicarFavicon, aplicarManifestDinamico } from "../../../utils/aplicarIconesPWA";
@@ -163,11 +167,11 @@ const OverlayBtn = styled.button`
 
   &:hover {
     background: ${({ $danger, $primary }) =>
-      $danger
-        ? "rgba(239, 68, 68, 0.85)"
-        : $primary
-          ? "#2563EB"
-          : "rgba(255, 255, 255, 0.2)"};
+    $danger
+      ? "rgba(239, 68, 68, 0.85)"
+      : $primary
+        ? "#2563EB"
+        : "rgba(255, 255, 255, 0.2)"};
   }
 `;
 
@@ -297,6 +301,32 @@ const InfoItem = styled.div`
   }
 `;
 
+const BotaoAcaoInline = styled.button`
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.cores.borda};
+  background: ${({ theme }) => theme.cores.vidro};
+  color: ${({ theme, $cor }) => $cor || theme.cores.texto};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: ${({ $bgHover }) => $bgHover || "rgba(128, 128, 128, 0.2)"};
+    color: white;
+    border-color: transparent;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 const pulseOnline = keyframes`
   0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
   50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
@@ -385,7 +415,7 @@ const padrao = {
 };
 
 export default function PerfilAdmin() {
-  const { usuarioAuth, perfil, eAdmin } = useAuth();
+  const { usuarioAuth, perfil, eAdmin, setPerfil } = useAuth();
   const uid = usuarioAuth?.uid;
 
   const [nomePainel, setNomePainel] = useState(padrao.nomePainel);
@@ -395,6 +425,11 @@ export default function PerfilAdmin() {
   const [progress, setProgress] = useState(0);
   const [arrastando, setArrastando] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
+
+  // Estados para edição do nome do admin
+  const [editandoNome, setEditandoNome] = useState(false);
+  const [novoNomeAdmin, setNovoNomeAdmin] = useState("");
+  const [salvandoNome, setSalvandoNome] = useState(false);
 
   const inputRef = useRef(null);
 
@@ -561,6 +596,34 @@ export default function PerfilAdmin() {
     }
   }
 
+  async function salvarNome() {
+    if (!uid || !novoNomeAdmin.trim()) return;
+    const nomeLimpo = novoNomeAdmin.trim();
+    try {
+      setSalvandoNome(true);
+
+      // Atualização otimista: altera o contexto imediatamente
+      if (perfil) {
+        setPerfil({ ...perfil, nome: nomeLimpo });
+      }
+
+      await salvarNomeAdmin(uid, nomeLimpo);
+      setEditandoNome(false);
+      toast.success("Nome atualizado!");
+    } catch (err) {
+      toast.error("Erro ao salvar nome.");
+      console.error(err);
+      // Reverter em caso de erro (o listener de rede faria isso, mas aqui é mais seguro)
+    } finally {
+      setSalvandoNome(false);
+    }
+  }
+
+  function iniciarEdicaoNome() {
+    setNovoNomeAdmin(nomeAdmin);
+    setEditandoNome(true);
+  }
+
   if (!eAdmin) {
     return (
       <Container>
@@ -657,9 +720,58 @@ export default function PerfilAdmin() {
                 <div className="icon-box">
                   <FaUserShield />
                 </div>
-                <div className="content">
+                <div className="content" style={{ flex: 1 }}>
                   <span className="label">Administrador</span>
-                  <span className="value">{nomeAdmin}</span>
+                  {editandoNome ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                      <input
+                        autoFocus
+                        value={novoNomeAdmin}
+                        onChange={(e) => setNovoNomeAdmin(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && salvarNome()}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid rgba(59, 130, 246, 0.4)",
+                          color: "#000000",
+                          borderRadius: 6,
+                          padding: "4px 8px",
+                          fontSize: "14px",
+                          width: "100%",
+                          outline: "none",
+                          fontWeight: 500
+                        }}
+                      />
+                      <BotaoAcaoInline
+                        onClick={salvarNome}
+                        disabled={salvandoNome}
+                        $cor="#22c55e"
+                        $bgHover="#22c55e"
+                        title="OK"
+                      >
+                        <FaCheck size={14} />
+                      </BotaoAcaoInline>
+                      <BotaoAcaoInline
+                        onClick={() => setEditandoNome(false)}
+                        $cor="#ef4444"
+                        $bgHover="#ef4444"
+                        title="Cancelar"
+                      >
+                        <FaTimes size={14} />
+                      </BotaoAcaoInline>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 8 }}>
+                      <span className="value">{nomeAdmin}</span>
+                      <BotaoAcaoInline
+                        onClick={iniciarEdicaoNome}
+                        $cor="#3b82f6"
+                        $bgHover="#3b82f6"
+                        title="Editar nome"
+                      >
+                        <FaPencilAlt size={12} />
+                      </BotaoAcaoInline>
+                    </div>
+                  )}
                 </div>
               </InfoItem>
 

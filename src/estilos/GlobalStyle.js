@@ -20,7 +20,8 @@ export const GlobalStyle = createGlobalStyle`
   button { font-family: inherit; }
 
   ::selection {
-    background: rgba(255,255,255,0.12);
+    background: ${({ theme }) => theme.cores.primaria ? `${theme.cores.primaria}1A` : "rgba(59, 130, 246, 0.1)"};
+    color: ${({ theme }) => theme.nome === "claro" ? "#000000" : "#ffffff"};
   }
 
   /* Toastify Customization */

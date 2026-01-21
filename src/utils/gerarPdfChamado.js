@@ -176,13 +176,16 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
       if (att.tipo === "mudanca_status") {
         textoAtt = `${att.adminNome || "Sistema"} alterou o status para ${formatarValor(att.para)}`;
       } else if (att.tipo === "mudanca_prioridade") {
-        textoAtt = `O administrador atualizou a prioridade para ${formatarValor(att.para)}`;
+        textoAtt = `${att.adminNome || "O administrador"} atualizou a prioridade para ${formatarValor(att.para)}`;
       } else if (att.tipo === "criacao") {
         textoAtt = "Chamado Criado";
       } else if (att.tipo === "nota" && att.texto?.startsWith("Prioridade:")) {
         // Fallback para logs antigos
         const val = att.texto.split(": ")[1];
-        textoAtt = `O administrador atualizou a prioridade para ${val}`;
+        textoAtt = `${att.adminNome || "O administrador"} atualizou a prioridade para ${val}`;
+      } else if (att.tipo === "nota") {
+        const prefixo = att.adminNome ? "Nova atualização do suporte: " : "";
+        textoAtt = `${prefixo}${att.texto || "Atualização no chamado"}`;
       } else {
         textoAtt = att.texto || "Atualização no chamado";
       }
@@ -199,11 +202,49 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
       drawTimelineIcon(iconY);
 
       // 1. Título
-      doc.setFont("helvetica", "bold");
       doc.setTextColor(...corTexto);
       doc.setFontSize(9);
-      doc.text(attLines, margin + 15, y);
-      y += (attLines.length * 5);
+
+      if (att.tipo === "nota" && !att.texto?.startsWith("Prioridade:")) {
+        const prefixo = att.adminNome ? "Nova atualização do suporte: " : "";
+        const notaLimpa = att.texto || "Atualização no chamado";
+
+        if (prefixo) {
+          // Versão Mista: Prefixo Negrito + Texto Normal
+          doc.setFont("helvetica", "bold");
+          doc.text(prefixo, margin + 15, y);
+
+          const larguraPrefixo = doc.getTextWidth(prefixo);
+          doc.setFont("helvetica", "normal");
+
+          // Precisamos quebrar o texto da nota considerando o espaço ocupado pelo prefixo na primeira linha
+          const restoNotaLines = doc.splitTextToSize(notaLimpa, contentWidth - 25 - larguraPrefixo);
+          const primeiraLinhaNota = restoNotaLines[0];
+
+          doc.text(primeiraLinhaNota, margin + 15 + larguraPrefixo, y);
+
+          // Se houver mais linhas, elas voltam para a margem normal
+          if (restoNotaLines.length > 1) {
+            const notaCompletaResto = notaLimpa.substring(primeiraLinhaNota.length).trim();
+            const linhasRestantes = doc.splitTextToSize(notaCompletaResto, contentWidth - 25);
+            y += 5;
+            doc.text(linhasRestantes, margin + 15, y);
+            y += (linhasRestantes.length * 5) - 5;
+          }
+        } else {
+          // Nota comum sem prefixo
+          doc.setFont("helvetica", "normal");
+          doc.text(attLines, margin + 15, y);
+        }
+      } else {
+        // Atualizações de sistema (Negrito)
+        doc.setFont("helvetica", "bold");
+        doc.text(attLines, margin + 15, y);
+      }
+
+      const totalLinesHeight = (attLines.length * 5);
+      y = checkPageBreak(iconY + totalLinesHeight, 5); // Garante que a data/hora caiba
+      y = iconY + totalLinesHeight;
 
       // 2. Data/Hora
       doc.setFont("helvetica", "normal");
@@ -217,6 +258,7 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
         const cores = { baixa: [50, 200, 255], normal: [16, 185, 129], alta: [249, 115, 22], urgente: [178, 79, 255] };
         let valor = att.para;
         if (att.tipo === "nota" && att.texto) {
+          doc.setFont("helvetica", "normal");
           valor = att.texto.split(": ")[1]?.toLowerCase();
         }
         const corFinal = cores[valor] || [128, 128, 128];
@@ -261,7 +303,8 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
       const autor = com.nome || "Anônimo";
       const papel = com.papel ? ` (${com.papel})` : "";
       const dataCom = formatarDataPdf(com.criadoEm);
-      const textoCom = com.mensagem || "";
+      const prefixo = (com.papel === "admin") ? "nova atualização do suporte: " : "";
+      const textoCom = `${prefixo}${com.mensagem || ""}`;
 
       const headerCom = `${autor}${papel} - ${dataCom}`;
       const bodyLines = doc.splitTextToSize(textoCom, contentWidth - 30);
