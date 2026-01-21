@@ -203,8 +203,10 @@ function montarHtml({ chamado, painel, logoDataUrl }) {
         <table class="metas">
           <tr>
             <td><b>Categoria:</b> ${chamado?.categoriaId || "-"}</td>
-            <td><b>Prioridade:</b> ${chamado?.prioridade || "-"}</td>
-            <td><b>Status:</b> ${chamado?.status || "-"}</td>
+            <td><b>Prioridade:</b> <span style="color: ${chamado?.prioridade === 'urgente' ? '#ff4d4d' : (chamado?.prioridade === 'alta' ? '#f97316' : 'inherit')}">${chamado?.prioridade === 'urgente' ? 'Urgente' : (chamado?.prioridade === 'alta' ? 'Alta' : (chamado?.prioridade || "-"))}</span></td>
+            <td>
+              <b>Status:</b> ${chamado?.status === "prodabel" ? "Encaminhado para Prodabel" : (chamado?.status === "aberto" ? "Recebido" : (chamado?.status === "andamento" ? "Em Andamento" : (chamado?.status || "-")))}
+            </td>
           </tr>
         </table>
 

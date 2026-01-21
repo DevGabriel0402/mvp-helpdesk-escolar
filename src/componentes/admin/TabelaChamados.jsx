@@ -174,7 +174,7 @@ function traduzirStatus(status) {
   switch (status) {
     case "aberto": return "Recebido";
     case "andamento": return "Em Progresso";
-    case "prodabel": return "Encaminhado para Prodabel";
+    case "prodabel": return "Encaminha para Prodabel";
     case "resolvido": return "Resolvido";
     default: return status;
   }

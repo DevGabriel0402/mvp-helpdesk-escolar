@@ -183,6 +183,21 @@ export async function buscarChamadoPorId(chamadoId) {
 }
 
 // ===============================
+// Ouvir chamado por ID (Real-time)
+// ===============================
+export function ouvirChamado(chamadoId, callback) {
+  if (!chamadoId) return null;
+  const ref = doc(db, "chamados", chamadoId);
+  return onSnapshot(ref, (snap) => {
+    if (snap.exists()) {
+      callback({ id: snap.id, ...snap.data() });
+    } else {
+      callback(null);
+    }
+  });
+}
+
+// ===============================
 // 1) Comentarios (admin e visitante)
 // ===============================
 export async function adicionarComentarioNoChamado({
@@ -249,6 +264,7 @@ export async function alterarStatusChamadoAdmin({
   novoStatus, // "aberto" | "andamento" | "resolvido"
   adminUid,
   adminNome,
+  texto = "",
 }) {
   const refChamado = doc(db, "chamados", chamadoId);
   const refAtualizacoes = collection(db, "chamados", chamadoId, "atualizacoes");
@@ -300,7 +316,7 @@ export async function alterarStatusChamadoAdmin({
       tipo: "mudanca_status",
       de: statusAtual,
       para: novoStatus,
-      texto: "",
+      texto,
       adminUid,
       adminNome,
       criadoEm: serverTimestamp(),

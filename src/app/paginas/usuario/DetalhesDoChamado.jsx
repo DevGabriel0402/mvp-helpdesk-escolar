@@ -29,12 +29,17 @@ import {
   alterarStatusChamadoAdmin,
   alterarPrioridadeChamadoAdmin,
   confirmarPrioridadeEReceberChamado,
+  excluirChamadoAdmin,
+  ouvirChamado,
   buscarChamadoPorId,
 } from "../../../servicos/firebase/chamadosServico";
 import { useAuth } from "../../../contextos/AuthContexto";
 import { usePainelPublico } from "../../../hooks/usePainelPublico";
 import { gerarPdfChamado } from "../../../utils/gerarPdfChamado";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
+import Modal from "../../../componentes/ui/Modal";
+import { CampoTexto } from "../../../componentes/ui/CampoTexto";
+import { Botao } from "../../../componentes/ui/Botao";
 
 const Grid = styled.div`
   display: flex;
@@ -134,7 +139,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "rgba(155, 89, 182, 0.15)"; // Purple
       case "resolvido":
-        return "rgba(128, 128, 128, 0.15)";
+        return "rgba(50, 255, 100, 0.15)"; // Green
       default:
         return "rgba(255, 255, 255, 0.1)";
     }
@@ -149,7 +154,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "#9b59b6"; // Purple
       case "resolvido":
-        return "#888";
+        return "#32ff64"; // Green
       default:
         return "#ccc";
     }
@@ -166,13 +171,13 @@ const PrioridadeBadge = styled.span`
   background: ${({ $prio }) => {
     switch ($prio) {
       case "alta":
-        return "rgba(255, 77, 77, 0.15)";
-      case "media":
-        return "rgba(255, 200, 50, 0.15)";
+        return "rgba(249, 115, 22, 0.15)";
+      case "normal":
+        return "rgba(16, 185, 129, 0.15)";
       case "baixa":
         return "rgba(50, 200, 255, 0.15)";
       case "urgente":
-        return "rgba(163, 58, 255, 0.15)";
+        return "rgba(255, 77, 77, 0.15)";
       default:
         return "rgba(255, 255, 255, 0.1)";
     }
@@ -181,13 +186,13 @@ const PrioridadeBadge = styled.span`
   color: ${({ $prio }) => {
     switch ($prio) {
       case "alta":
-        return "#ff4d4d";
-      case "media":
-        return "#ffc832";
+        return "#f97316";
+      case "normal":
+        return "#10b981";
       case "baixa":
         return "#32c8ff";
       case "urgente":
-        return "#b24fff";
+        return "#ff4d4d";
       default:
         return "#ccc";
     }
@@ -333,7 +338,7 @@ function DefinirPrioridadeInline({
   }
 
   if (definida) {
-    const cores = { baixa: "#32c8ff", normal: "#10b981", alta: "#f97316", urgente: "#b24fff" };
+    const cores = { baixa: "#32c8ff", normal: "#10b981", alta: "#f97316", urgente: "#ff4d4d" };
     const cor = cores[prioridade?.toLowerCase()] || "#10b981";
 
     return (
@@ -435,7 +440,13 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
   const theme = useTheme();
   const [status, setStatus] = useState(statusAtual || "aberto");
   const [nota, setNota] = useState("");
-  const [statusMaximo, setStatusMaximo] = useState(statusAtual || "aberto");
+  // Trava local para evitar retrocesso e oscilação por latência do banco
+  const [statusMinimo, setStatusMinimo] = useState(statusAtual || "aberto");
+
+  // Modal Prodabel
+  const [modalProdabelAberto, setModalProdabelAberto] = useState(false);
+  const [numeroChamadoProdabel, setNumeroChamadoProdabel] = useState("");
+  const [enviandoProdabel, setEnviandoProdabel] = useState(false);
 
   const hierarquia = {
     aberto: 0,
@@ -444,40 +455,32 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
     resolvido: 3,
   };
 
-  // Reagir a sugestões externas (ex: Confirmar Prioridade)
-  useEffect(() => {
-    if (statusSugerido) {
-      console.log("Sugestão recebida:", statusSugerido);
-      setStatus(statusSugerido);
-      // Aqui NÃO limpamos imediatamente para dar tempo do render capturar
-    }
-  }, [statusSugerido]);
-
   // Sincronização inicial e com mudanças no banco
   useEffect(() => {
     if (statusAtual) {
-      // 1. Atualizar limite de navegacao (fluxo unidirecional)
-      if (hierarquia[statusAtual] > hierarquia[statusMaximo]) {
-        setStatusMaximo(statusAtual);
+      // Atualiza o bloqueio se o banco estiver mais avançado
+      if (hierarquia[statusAtual] > hierarquia[statusMinimo]) {
+        setStatusMinimo(statusAtual);
       }
 
-      // 2. Segue o banco se não houver sugestão ativa
-      if (!statusSugerido) {
+      // Segue o banco se não houver sugestão ativa e o banco for superior ao local
+      if (!statusSugerido && hierarquia[statusAtual] > hierarquia[status]) {
         setStatus(statusAtual);
       }
     }
-  }, [statusAtual, statusSugerido]);
+  }, [statusAtual, statusSugerido, status, statusMinimo]);
 
-  // Reagir a sugestões externas específicas (Confirmar Prioridade)
+  // Reagir a sugestões externas (ex: Confirmar Prioridade)
   useEffect(() => {
     if (statusSugerido) {
-      console.log("Aplicando sugestão externa:", statusSugerido);
       setStatus(statusSugerido);
-      // Limpamos no pai após o consumo para evitar loops ou travamentos
+      if (hierarquia[statusSugerido] > hierarquia[statusMinimo]) {
+        setStatusMinimo(statusSugerido);
+      }
       const timer = setTimeout(() => limparSugerido?.(), 500);
       return () => clearTimeout(timer);
     }
-  }, [statusSugerido, limparSugerido]);
+  }, [statusSugerido, limparSugerido, statusMinimo]);
 
   async function salvarNota() {
     try {
@@ -499,9 +502,10 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
 
   async function mudarStatus() {
     try {
-      // Bloqueio imediato local para UI
-      if (hierarquia[status] > hierarquia[statusMaximo]) {
-        setStatusMaximo(status);
+      // Se for encaminhamento para Prodabel, abre o modal em vez de salvar direto
+      if (status === "prodabel") {
+        setModalProdabelAberto(true);
+        return;
       }
 
       await alterarStatusChamadoAdmin({
@@ -511,17 +515,42 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
         adminNome,
       });
       toast.success("Status atualizado.");
+      setStatusMinimo(status); // Bloqueia retrocesso imediatamente
       setNota("");
-
-      // Salto manual: sugerir o próximo após salvar
-      const lista = ["aberto", "andamento", "prodabel", "resolvido"];
-      const nextIdx = lista.indexOf(status) + 1;
-      if (nextIdx < lista.length) {
-        setStatus(lista[nextIdx]);
-      }
     } catch (e) {
       console.error(e);
       toast.error("Nao foi possivel mudar o status.");
+    }
+  }
+
+  async function confirmarEncaminhamentoProdabel() {
+    if (!numeroChamadoProdabel.trim()) {
+      toast.error("Informe o número do chamado da Prodabel.");
+      return;
+    }
+
+    setEnviandoProdabel(true);
+    try {
+      const textoPersonalizado = `N° do chamado: ${numeroChamadoProdabel.trim()}`;
+
+      await alterarStatusChamadoAdmin({
+        chamadoId,
+        novoStatus: "prodabel",
+        adminUid,
+        adminNome,
+        texto: textoPersonalizado,
+      });
+
+      toast.success("Encaminhado para Prodabel com sucesso!");
+      setStatusMinimo("prodabel"); // Bloqueia retrocesso imediatamente
+      setModalProdabelAberto(false);
+      setNumeroChamadoProdabel("");
+      setNota("");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao encaminhar para Prodabel.");
+    } finally {
+      setEnviandoProdabel(false);
     }
   }
 
@@ -530,7 +559,7 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
       if (!window.confirm("Deseja realmente finalizar o chamado?")) return;
 
       // Bloqueio imediato local para UI
-      setStatusMaximo("resolvido");
+      setStatusMinimo("resolvido");
 
       await alterarStatusChamadoAdmin({
         chamadoId,
@@ -571,26 +600,26 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
                 value: "aberto",
                 label: "Recebido",
                 icone: <FaExclamationCircle color="#32c8ff" />,
-                disabled: hierarquia["aberto"] <= hierarquia[statusMaximo],
+                disabled: hierarquia["aberto"] <= Math.max(hierarquia[statusAtual], hierarquia[statusMinimo]),
               },
               {
                 value: "andamento",
                 label: "Em andamento",
                 icone: <FaPlayCircle color="#ffc832" />,
-                disabled: hierarquia["andamento"] <= hierarquia[statusMaximo],
+                disabled: hierarquia["andamento"] <= Math.max(hierarquia[statusAtual], hierarquia[statusMinimo]),
               },
               {
                 value: "prodabel",
-                label: "Encaminhado para Prodabel",
+                label: "Encaminha para Prodabel",
                 icone: <FaExternalLinkAlt color="#9b59b6" />,
-                disabled: hierarquia["prodabel"] <= hierarquia[statusMaximo],
+                disabled: hierarquia["prodabel"] <= Math.max(hierarquia[statusAtual], hierarquia[statusMinimo]),
               },
-              {
+              ...(status === "resolvido" ? [{
                 value: "resolvido",
                 label: "Resolvido",
                 icone: <FaCheckCircle color="#32ff64" />,
-                disabled: hierarquia["resolvido"] <= hierarquia[statusMaximo],
-              },
+                disabled: true,
+              }] : []),
             ]}
             placeholder="Selecione o status"
           />
@@ -650,8 +679,18 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
           fontSize: '0.9rem'
         }}
       />
-      <BotaoNota onClick={salvarNota} style={{ marginTop: 10, width: '100%' }}>
-        Adicionar Nota
+      <BotaoNota
+        onClick={salvarNota}
+        style={{
+          marginTop: 10,
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8
+        }}
+      >
+        <FaPlusCircle /> Adicionar Nota
       </BotaoNota>
 
       {/* Botões de Ação Final */}
@@ -664,21 +703,59 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
             borderRadius: 12,
             cursor: "pointer",
             fontWeight: 600,
-            background: "rgba(50, 255, 100, 0.1)",
-            border: "1px solid rgba(50, 255, 100, 0.2)",
-            color: "#32ff64",
+            background: "#32ff64",
+            border: "none",
+            color: "#000",
             transition: "all 0.2s",
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8
           }}
-          onMouseOver={(e) => (e.currentTarget.style.background = "rgba(50, 255, 100, 0.15)")}
-          onMouseOut={(e) => (e.currentTarget.style.background = "rgba(50, 255, 100, 0.1)")}
+          onMouseOver={(e) => (e.currentTarget.style.background = "#2cf05d")}
+          onMouseOut={(e) => (e.currentTarget.style.background = "#32ff64")}
         >
           <FaCheckCircle /> Finalizar Chamado
         </button>
       </div>
+
+      <Modal
+        aberto={modalProdabelAberto}
+        aoFechar={() => !enviandoProdabel && setModalProdabelAberto(false)}
+        titulo="Encaminhar para Prodabel"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "10px 0" }}>
+          <p style={{ margin: 0, fontSize: "0.95rem", opacity: 0.8 }}>
+            Informe o número do chamado gerado no sistema da Prodabel para este atendimento.
+          </p>
+
+          <CampoTexto
+            label="Número do Chamado (Prodabel)"
+            value={numeroChamadoProdabel}
+            onChange={(e) => setNumeroChamadoProdabel(e.target.value.replace(/\D/g, ''))}
+            placeholder="Ex: 123456"
+            autoFocus
+          />
+
+          <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+            <Botao
+              $variant="secundario"
+              onClick={() => setModalProdabelAberto(false)}
+              disabled={enviandoProdabel}
+              style={{ flex: 1 }}
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              onClick={confirmarEncaminhamentoProdabel}
+              carregando={enviandoProdabel}
+              style={{ flex: 1 }}
+            >
+              Confirmar
+            </Botao>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -719,17 +796,15 @@ export default function DetalhesDoChamado() {
     }
   }
 
-  // Buscar dados do chamado (estatico para pegar status inicial, etc)
+  // Buscar dados do chamado em tempo real
   useEffect(() => {
     if (!id) return;
 
-    buscarChamadoPorId(id)
-      .then((res) => {
-        setChamado(res);
-      })
-      .catch((err) => {
-        console.error("Erro ao buscar chamado:", err);
-      });
+    const unsub = ouvirChamado(id, (res) => {
+      setChamado(res);
+    });
+
+    return () => unsub?.();
   }, [id]);
 
   useEffect(() => {
@@ -800,9 +875,11 @@ export default function DetalhesDoChamado() {
               ? "Em Progresso"
               : ultimoStatus === "aberto"
                 ? "Recebido"
-                : ultimoStatus === "resolvido"
-                  ? "Chamado Finalizado"
-                  : ultimoStatus}
+                : ultimoStatus === "prodabel"
+                  ? "Encaminha para Prodabel"
+                  : ultimoStatus === "resolvido"
+                    ? "Chamado Finalizado"
+                    : ultimoStatus}
           </StatusBadge>
           <PrioridadeBadge $prio={chamado?.prioridade}>
             {chamado?.prioridade || "-"}
@@ -855,8 +932,11 @@ export default function DetalhesDoChamado() {
                         background: (() => {
                           if (item.tipo === "criacao") return "rgba(50, 200, 255, 0.1)";
                           if (item.tipo === "nota") return "rgba(255, 200, 50, 0.1)";
-                          if (item.tipo === "mudanca_prioridade")
+                          if (item.tipo === "mudanca_prioridade") {
+                            if (item.para === "urgente") return "rgba(255, 77, 77, 0.1)";
+                            if (item.para === "alta") return "rgba(249, 115, 22, 0.1)";
                             return "rgba(255, 165, 0, 0.1)";
+                          }
                           switch (item.para) {
                             case "prodabel":
                               return "rgba(155, 89, 182, 0.1)";
@@ -871,7 +951,11 @@ export default function DetalhesDoChamado() {
                         color: (() => {
                           if (item.tipo === "criacao") return "#32c8ff";
                           if (item.tipo === "nota") return "#ffc832";
-                          if (item.tipo === "mudanca_prioridade") return "#ffa500";
+                          if (item.tipo === "mudanca_prioridade") {
+                            if (item.para === "urgente") return "#ff4d4d";
+                            if (item.para === "alta") return "#f97316";
+                            return "#ffa500";
+                          }
                           switch (item.para) {
                             case "prodabel":
                               return "#9b59b6";
@@ -879,6 +963,8 @@ export default function DetalhesDoChamado() {
                               return "#32ff64";
                             case "andamento":
                               return "#ffc832";
+                            case "urgente":
+                              return "#ff4d4d";
                             default:
                               return "#32c8ff";
                           }
@@ -914,7 +1000,7 @@ export default function DetalhesDoChamado() {
                             const nomes = {
                               aberto: "Recebido",
                               andamento: "Em Andamento",
-                              prodabel: "Prodabel",
+                              prodabel: "Encaminha para Prodabel",
                               resolvido: "Resolvido",
                               baixa: "Baixa",
                               normal: "Normal",

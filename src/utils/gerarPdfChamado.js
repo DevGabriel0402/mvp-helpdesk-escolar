@@ -106,22 +106,60 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
   doc.text("Informações do Chamado", margin, y);
   y += 6;
 
-  function addCampo(label, value, currentY) {
+  function addCampo(label, value, currentY, subValue = null, valorCor = null) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...corFraco);
     doc.text(label, margin + 5, currentY);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...corTexto);
+
+    if (valorCor) {
+      doc.setTextColor(...valorCor);
+    } else {
+      doc.setTextColor(...corTexto);
+    }
+
     const lines = doc.splitTextToSize(value || "-", contentWidth - 50);
     doc.text(lines, margin + 45, currentY);
-    return currentY + (lines.length * 5) + 2;
+    let nextY = currentY + (lines.length * 5);
+
+    if (subValue) {
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139); // Cor mais suave (slate-500)
+      doc.setFont("helvetica", "normal");
+      doc.text(subValue, margin + 45, nextY);
+      nextY += 4;
+    }
+
+    doc.setFontSize(10); // Reset para prumo
+    return nextY + 2;
   }
 
   y = addCampo("Título:", chamado?.titulo, y);
   y = addCampo("Localização:", chamado?.localDoProblema, y);
   y = addCampo("Categoria:", chamado?.categoriaId, y);
-  y = addCampo("Prioridade:", chamado?.prioridade, y);
-  y = addCampo("Status Atual:", chamado?.status, y);
+  const prioVal = chamado?.prioridade;
+  const prioLabel = prioVal === "urgente" ? "Urgente" : (prioVal === "alta" ? "Alta" : (prioVal || "-"));
+  const prioCor = prioVal === "urgente" ? [255, 77, 77] : (prioVal === "alta" ? [249, 115, 22] : null);
+
+  y = addCampo("Prioridade:", prioLabel, y, null, prioCor);
+
+  let statusLabel = chamado?.status;
+  let statusCor = null;
+  if (chamado?.status === "prodabel") {
+    statusLabel = "Encaminhado para Prodabel";
+    statusCor = [155, 89, 182];
+  } else if (chamado?.status === "aberto") {
+    statusLabel = "Recebido";
+    statusCor = [50, 200, 255];
+  } else if (chamado?.status === "andamento") {
+    statusLabel = "Em Andamento";
+    statusCor = [255, 200, 50];
+  } else if (chamado?.status === "resolvido") {
+    statusLabel = "Resolvido";
+    statusCor = [50, 255, 100];
+  }
+
+  y = addCampo("Status Atual:", statusLabel, y, null, [0, 0, 0]);
   y = addCampo("Aberto por:", chamado?.criadoPorNome, y);
   y = addCampo("Data Abertura:", criadoEm, y);
 
@@ -144,12 +182,17 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
     doc.line(margin + 8, startY, margin + 8, endY);
   };
 
-  const drawTimelineIcon = (yCoord) => {
+  const drawTimelineIcon = (yCoord, color = null) => {
     const xIcon = margin + 8;
-    // Círculo de fundo unificado (azul suave)
-    doc.setFillColor(...corFundoDesc);
-    doc.setDrawColor(226, 232, 240);
-    doc.circle(xIcon, yCoord - 1, 2.5, "FD");
+    // Se tiver cor, usa cor sólida para fundo e borda
+    if (color) {
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.setDrawColor(color[0], color[1], color[2]);
+    } else {
+      doc.setFillColor(...corFundoDesc);
+      doc.setDrawColor(226, 232, 240);
+    }
+    doc.circle(xIcon, yCoord - 1, 2.3, "FD");
   };
 
   // Histórico de Atualizações
@@ -166,8 +209,14 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
     atualizacoes.forEach((att, idx) => {
       const formatarValor = (v) => {
         const nomes = {
-          aberto: "Recebido", andamento: "Em Andamento", prodabel: "Prodabel", resolvido: "Resolvido",
-          baixa: "Baixa", normal: "Normal", alta: "Alta", urgente: "Urgente",
+          aberto: "Recebido",
+          andamento: "Em Andamento",
+          prodabel: "Encaminhado para Prodabel",
+          resolvido: "Resolvido",
+          baixa: "Baixa",
+          normal: "Normal",
+          alta: "Alta",
+          urgente: "Urgente",
         };
         return nomes[v] || v;
       };
@@ -175,6 +224,9 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
       let textoAtt = "";
       if (att.tipo === "mudanca_status") {
         textoAtt = `${att.adminNome || "Sistema"} alterou o status para ${formatarValor(att.para)}`;
+        if (att.para === "prodabel" && att.texto) {
+          textoAtt += `: ${att.texto}`;
+        }
       } else if (att.tipo === "mudanca_prioridade") {
         textoAtt = `${att.adminNome || "O administrador"} atualizou a prioridade para ${formatarValor(att.para)}`;
       } else if (att.tipo === "criacao") {
@@ -190,16 +242,40 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
         textoAtt = att.texto || "Atualização no chamado";
       }
 
-      const dataAtt = formatarDataPdf(att.criadoEm);
+      const dataAtt = (() => {
+        if (!att.criadoEm) return "-";
+        let d = att.criadoEm;
+        if (d.toDate) d = d.toDate();
+        else if (typeof d === "number" || typeof d === "string") d = new Date(d);
+        if (isNaN(d.getTime())) return String(att.criadoEm);
+        return `${d.toLocaleDateString("pt-BR")}, ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+      })();
       const attLines = doc.splitTextToSize(textoAtt, contentWidth - 25);
 
       const isPrio = att.tipo === "mudanca_prioridade" || (att.tipo === "nota" && att.texto?.startsWith("Prioridade:"));
       const isStatus = att.tipo === "mudanca_status";
       const needed = (attLines.length * 5) + ((isPrio || isStatus) ? 15 : 10);
 
+      const getCorItem = (item) => {
+        if (item.tipo === "criacao") return [50, 200, 255];
+        if (item.tipo === "nota") return [255, 200, 50];
+        if (item.tipo === "mudanca_prioridade") {
+          if (item.para === "urgente") return [255, 77, 77];
+          if (item.para === "alta") return [249, 115, 22];
+          return [255, 165, 0];
+        }
+        const cores = {
+          aberto: [50, 200, 255],
+          andamento: [255, 200, 50],
+          prodabel: [155, 89, 182],
+          resolvido: [50, 255, 100],
+        };
+        return cores[item.para] || [50, 200, 255];
+      };
+
       y = checkPageBreak(y, needed);
       const iconY = y; // Posição do ícone atual
-      drawTimelineIcon(iconY);
+      drawTimelineIcon(iconY, getCorItem(att));
 
       // 1. Título
       doc.setTextColor(...corTexto);
@@ -242,46 +318,16 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
         doc.text(attLines, margin + 15, y);
       }
 
-      const totalLinesHeight = (attLines.length * 5);
-      y = checkPageBreak(iconY + totalLinesHeight, 5); // Garante que a data/hora caiba
+      const totalLinesHeight = (attLines.length * 4.2);
       y = iconY + totalLinesHeight;
 
-      // 2. Data/Hora
+      // 2. Data/Hora (Logo após o texto)
+      y += 0.8;
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...corFraco);
+      doc.setTextColor(156, 163, 175); // gray-400
       doc.setFontSize(7);
       doc.text(dataAtt, margin + 15, y);
-      y += 5;
-
-      // 3. Sub-linhas específicas
-      if (isPrio) {
-        const cores = { baixa: [50, 200, 255], normal: [16, 185, 129], alta: [249, 115, 22], urgente: [178, 79, 255] };
-        let valor = att.para;
-        if (att.tipo === "nota" && att.texto) {
-          doc.setFont("helvetica", "normal");
-          valor = att.texto.split(": ")[1]?.toLowerCase();
-        }
-        const corFinal = cores[valor] || [128, 128, 128];
-        const labelPrio = valor ? valor.charAt(0).toUpperCase() + valor.slice(1) : "";
-
-        doc.setTextColor(...corFinal);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        y += 5;
-      } else if (isStatus) {
-        const nomes = { aberto: "Recebido", andamento: "Em Andamento", prodabel: "Prodabel", resolvido: "Resolvido" };
-        const de = nomes[att.de] || att.de || "Início";
-        const para = nomes[att.para] || att.para;
-        const textoStatus = (att.de === "aberto" && att.para === "aberto")
-          ? `Criado -> ${para}`
-          : `${de} -> ${para}`;
-
-        doc.setTextColor(...corTexto);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-
-        y += 5;
-      }
+      y += 4;
 
       if (idx < atualizacoes.length - 1 || (comentarios && comentarios.length > 0)) {
         drawTimelineLine(iconY + 2.5, y - 2);

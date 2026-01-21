@@ -79,7 +79,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "rgba(155, 89, 182, 0.15)"; // Purple
       case "resolvido":
-        return "rgba(128, 128, 128, 0.15)";
+        return "rgba(50, 255, 100, 0.15)"; // Green
       default:
         return "rgba(255, 255, 255, 0.1)";
     }
@@ -94,7 +94,7 @@ const StatusBadge = styled.span`
       case "prodabel":
         return "#9b59b6"; // Purple
       case "resolvido":
-        return "#888";
+        return "#32ff64"; // Green
       default:
         return "#ccc";
     }
@@ -111,13 +111,13 @@ const PrioridadeBadge = styled.span`
   background: ${({ $prio }) => {
     switch ($prio) {
       case "alta":
-        return "rgba(255, 77, 77, 0.15)";
+        return "rgba(249, 115, 22, 0.15)";
       case "media":
         return "rgba(255, 200, 50, 0.15)";
       case "baixa":
         return "rgba(50, 200, 255, 0.15)";
       case "urgente":
-        return "rgba(163, 58, 255, 0.15)";
+        return "rgba(255, 77, 77, 0.15)";
       default:
         return "rgba(255, 255, 255, 0.1)";
     }
@@ -126,13 +126,13 @@ const PrioridadeBadge = styled.span`
   color: ${({ $prio }) => {
     switch ($prio) {
       case "alta":
-        return "#ff4d4d";
+        return "#f97316";
       case "media":
         return "#ffc832";
       case "baixa":
         return "#32c8ff";
       case "urgente":
-        return "#b24fff";
+        return "#ff4d4d";
       default:
         return "#ccc";
     }
@@ -366,7 +366,9 @@ export default function BuscarChamado() {
                 ? "Em Progresso"
                 : chamado.status === "aberto"
                   ? "Recebido"
-                  : chamado.status}
+                  : chamado.status === "prodabel"
+                    ? "Encaminha para Prodabel"
+                    : chamado.status}
             </StatusBadge>
             <PrioridadeBadge $prio={chamado.prioridade}>
               {chamado.prioridade}
@@ -419,8 +421,11 @@ export default function BuscarChamado() {
                           background: (() => {
                             if (item.tipo === "criacao") return "rgba(50, 200, 255, 0.1)";
                             if (item.tipo === "nota") return "rgba(255, 200, 50, 0.1)";
-                            if (item.tipo === "mudanca_prioridade")
+                            if (item.tipo === "mudanca_prioridade") {
+                              if (item.para === "urgente") return "rgba(255, 77, 77, 0.1)";
+                              if (item.para === "alta") return "rgba(249, 115, 22, 0.1)";
                               return "rgba(255, 165, 0, 0.1)";
+                            }
                             switch (item.para) {
                               case "prodabel":
                                 return "rgba(155, 89, 182, 0.1)";
@@ -428,6 +433,8 @@ export default function BuscarChamado() {
                                 return "rgba(50, 255, 100, 0.1)";
                               case "andamento":
                                 return "rgba(255, 200, 50, 0.1)";
+                              case "urgente":
+                                return "rgba(255, 77, 77, 0.1)";
                               default:
                                 return "rgba(50, 200, 255, 0.1)";
                             }
@@ -435,7 +442,11 @@ export default function BuscarChamado() {
                           color: (() => {
                             if (item.tipo === "criacao") return "#32c8ff";
                             if (item.tipo === "nota") return "#ffc832";
-                            if (item.tipo === "mudanca_prioridade") return "#ffa500";
+                            if (item.tipo === "mudanca_prioridade") {
+                              if (item.para === "urgente") return "#ff4d4d";
+                              if (item.para === "alta") return "#f97316";
+                              return "#ffa500";
+                            }
                             switch (item.para) {
                               case "prodabel":
                                 return "#9b59b6";
@@ -443,6 +454,8 @@ export default function BuscarChamado() {
                                 return "#32ff64";
                               case "andamento":
                                 return "#ffc832";
+                              case "urgente":
+                                return "#ff4d4d";
                               default:
                                 return "#32c8ff";
                             }
@@ -478,7 +491,7 @@ export default function BuscarChamado() {
                               const nomes = {
                                 aberto: "Recebido",
                                 andamento: "Em Andamento",
-                                prodabel: "Prodabel",
+                                prodabel: "Encaminha para Prodabel",
                                 resolvido: "Resolvido",
                                 baixa: "Baixa",
                                 normal: "Normal",
@@ -518,7 +531,7 @@ export default function BuscarChamado() {
                           }}>
                             {(() => {
                               const nomes = { baixa: "Baixa", normal: "Normal", alta: "Alta", urgente: "Urgente" };
-                              const cores = { baixa: "#32c8ff", normal: "#10b981", alta: "#f97316", urgente: "#b24fff" };
+                              const cores = { baixa: "#32c8ff", normal: "#10b981", alta: "#f97316", urgente: "#ff4d4d" };
 
                               let valor = item.para;
                               if (item.tipo === "nota") {
@@ -542,7 +555,7 @@ export default function BuscarChamado() {
                         {item.tipo === "mudanca_status" && (
                           <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
                             {(() => {
-                              const nomes = { aberto: "Recebido", andamento: "Em Andamento", prodabel: "Prodabel", resolvido: "Resolvido" };
+                              const nomes = { aberto: "Recebido", andamento: "Em Andamento", prodabel: "Encaminha para Prodabel", resolvido: "Resolvido" };
                               const para = nomes[item.para] || item.para;
                               if (item.de === "aberto" && item.para === "aberto") {
                                 return (
@@ -621,7 +634,8 @@ export default function BuscarChamado() {
             )}
           </Lista>
         </Caixa>
-      )}
-    </Container>
+      )
+      }
+    </Container >
   );
 }
