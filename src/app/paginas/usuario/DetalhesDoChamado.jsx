@@ -597,6 +597,7 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
         </div>
         <button
           onClick={mudarStatus}
+          disabled={status === statusAtual}
           title="Salvar Status"
           style={{
             width: 46,
@@ -605,14 +606,19 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            cursor: "pointer",
+            cursor: status === statusAtual ? "not-allowed" : "pointer",
             background: "rgba(50, 200, 255, 0.15)",
             border: "1px solid rgba(50, 200, 255, 0.3)",
             color: "#32c8ff",
             transition: "all 0.2s",
+            opacity: status === statusAtual ? 0.4 : 1,
           }}
-          onMouseOver={(e) => (e.currentTarget.style.background = "rgba(50, 200, 255, 0.25)")}
-          onMouseOut={(e) => (e.currentTarget.style.background = "rgba(50, 200, 255, 0.15)")}
+          onMouseOver={(e) => {
+            if (status !== statusAtual) e.currentTarget.style.background = "rgba(50, 200, 255, 0.25)";
+          }}
+          onMouseOut={(e) => {
+            if (status !== statusAtual) e.currentTarget.style.background = "rgba(50, 200, 255, 0.15)";
+          }}
         >
           <FaSave size={18} />
         </button>
@@ -767,14 +773,16 @@ export default function DetalhesDoChamado() {
 
   // Vou adicionar status=aberto como fallback ou pegar da ultima mudanca de status na timeline.
   const ultimoStatus = useMemo(() => {
-    // procurar de tras pra frente
+    if (chamado?.status) return chamado.status;
+
+    // Fallback: procurar no histórico (timeline) se o documento ainda não carregou
     for (let i = timeline.length - 1; i >= 0; i--) {
       if (timeline[i].tipo === "mudanca_status") {
         return timeline[i].para;
       }
     }
     return "aberto";
-  }, [timeline]);
+  }, [chamado, timeline]);
 
   return (
     <Grid>
