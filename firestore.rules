@@ -158,7 +158,7 @@ service cloud.firestore {
           && request.resource.data.tipo in [
             "mudanca_status", "atribuido", "mudanca_prioridade", "mudanca_categoria", "nota"
           ]
-          && request.resource.data.texto is string
+          && request.resource.data.get('texto', "") is string
           && request.resource.data.adminUid == uid()
           && request.resource.data.adminNome is string;
 

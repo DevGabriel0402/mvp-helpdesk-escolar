@@ -459,6 +459,7 @@ export async function confirmarPrioridadeEReceberChamado({
       tipo: "mudanca_status",
       de: "aberto",
       para: "aberto",
+      texto: "",
       adminUid,
       adminNome,
       criadoEm: serverTimestamp(),

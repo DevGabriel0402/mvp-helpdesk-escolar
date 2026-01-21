@@ -428,7 +428,7 @@ const BotaoNota = styled.button`
   }
 `;
 
-function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
+function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, statusSugerido, limparSugerido }) {
   const theme = useTheme();
   const [status, setStatus] = useState(statusAtual || "aberto");
   const [nota, setNota] = useState("");
@@ -441,16 +441,27 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
     resolvido: 3,
   };
 
-  // Atualiza status local se o prop mudar
+  // Reagir a sugestões externas (ex: Confirmar Prioridade)
+  useEffect(() => {
+    if (statusSugerido) {
+      setStatus(statusSugerido);
+      limparSugerido?.();
+    }
+  }, [statusSugerido, limparSugerido]);
+
+  // Atualiza status local se o banco mudar e estiver à frente ou for a carga inicial
   useEffect(() => {
     if (statusAtual) {
-      setStatus(statusAtual);
-      // Mantemos o rastro do status mais alto ja alcancado
       if (hierarquia[statusAtual] > hierarquia[statusMaximo]) {
         setStatusMaximo(statusAtual);
       }
+
+      // Sincroniza local apenas se o banco estiver à frente do seletor (carga inicial ou atualização remota)
+      if (hierarquia[statusAtual] > hierarquia[status]) {
+        setStatus(statusAtual);
+      }
     }
-  }, [statusAtual, statusMaximo]);
+  }, [statusAtual]);
 
   async function salvarNota() {
     try {
@@ -485,6 +496,13 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
       });
       toast.success("Status atualizado.");
       setNota("");
+
+      // Salto manual: sugerir o próximo após salvar
+      const lista = ["aberto", "andamento", "prodabel", "resolvido"];
+      const nextIdx = lista.indexOf(status) + 1;
+      if (nextIdx < lista.length) {
+        setStatus(lista[nextIdx]);
+      }
     } catch (e) {
       console.error(e);
       toast.error("Nao foi possivel mudar o status.");
@@ -506,6 +524,7 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
       });
       toast.success("Chamado finalizado (resolvido).");
       setNota("");
+      setStatus("resolvido");
     } catch (e) {
       console.error(e);
       toast.error("Nao foi possivel finalizar.");
@@ -536,25 +555,25 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual }) {
                 value: "aberto",
                 label: "Recebido",
                 icone: <FaExclamationCircle color="#32c8ff" />,
-                disabled: hierarquia["aberto"] < hierarquia[statusMaximo],
+                disabled: hierarquia["aberto"] <= hierarquia[statusMaximo],
               },
               {
                 value: "andamento",
                 label: "Em andamento",
                 icone: <FaPlayCircle color="#ffc832" />,
-                disabled: hierarquia["andamento"] < hierarquia[statusMaximo],
+                disabled: hierarquia["andamento"] <= hierarquia[statusMaximo],
               },
               {
                 value: "prodabel",
                 label: "Encaminhado para Prodabel",
                 icone: <FaExternalLinkAlt color="#9b59b6" />,
-                disabled: hierarquia["prodabel"] < hierarquia[statusMaximo],
+                disabled: hierarquia["prodabel"] <= hierarquia[statusMaximo],
               },
               {
                 value: "resolvido",
                 label: "Resolvido",
                 icone: <FaCheckCircle color="#32ff64" />,
-                disabled: hierarquia["resolvido"] < hierarquia[statusMaximo],
+                disabled: hierarquia["resolvido"] <= hierarquia[statusMaximo],
               },
             ]}
             placeholder="Selecione o status"
@@ -651,6 +670,7 @@ export default function DetalhesDoChamado() {
   const [chamado, setChamado] = useState(null);
   const [atualizacoes, setAtualizacoes] = useState([]);
   const [comentarios, setComentarios] = useState([]);
+  const [statusSugerido, setStatusSugerido] = useState(null);
 
   // Modal de exclusão
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
@@ -937,6 +957,7 @@ export default function DetalhesDoChamado() {
                           adminUid={uid}
                           adminNome={perfil?.nome || "Admin"}
                           prioridadeAtual={chamado?.prioridade}
+                          onDefinida={() => setStatusSugerido("andamento")}
                         />
                       )}
                       {item.texto && (
@@ -1006,6 +1027,8 @@ export default function DetalhesDoChamado() {
               adminUid={uid}
               adminNome={perfil?.nome || "Admin"}
               statusAtual={ultimoStatus}
+              statusSugerido={statusSugerido}
+              limparSugerido={() => setStatusSugerido(null)}
             />
 
             {/* Botão de Excluir */}
