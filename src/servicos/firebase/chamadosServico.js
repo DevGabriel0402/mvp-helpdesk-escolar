@@ -443,11 +443,13 @@ export async function confirmarPrioridadeEReceberChamado({
       ultimaAtividadeEm: serverTimestamp(),
     });
 
-    // 2) Adiciona nota: "Prioridade: [Valor]"
+    // 2) Log de prioridade: "O administrador atualizou a prioridade..."
     const refNotaPrio = doc(refAtualizacoes);
     transacao.set(refNotaPrio, {
-      tipo: "nota",
-      texto: `Prioridade: ${novaPrioridade.charAt(0).toUpperCase() + novaPrioridade.slice(1)}`,
+      tipo: "mudanca_prioridade",
+      de: "pendente",
+      para: novaPrioridade,
+      texto: "",
       adminUid,
       adminNome,
       criadoEm: serverTimestamp(),

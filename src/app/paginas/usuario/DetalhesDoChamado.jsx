@@ -333,12 +333,15 @@ function DefinirPrioridadeInline({
   }
 
   if (definida) {
+    const cores = { baixa: "#32c8ff", normal: "#10b981", alta: "#f97316", urgente: "#b24fff" };
+    const cor = cores[prioridade?.toLowerCase()] || "#10b981";
+
     return (
       <div
         style={{
           marginTop: 8,
           fontSize: "0.85rem",
-          color: "#32ff64",
+          color: cor,
           display: "flex",
           alignItems: "center",
           gap: 6,
@@ -444,24 +447,37 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
   // Reagir a sugestões externas (ex: Confirmar Prioridade)
   useEffect(() => {
     if (statusSugerido) {
+      console.log("Sugestão recebida:", statusSugerido);
       setStatus(statusSugerido);
-      limparSugerido?.();
+      // Aqui NÃO limpamos imediatamente para dar tempo do render capturar
     }
-  }, [statusSugerido, limparSugerido]);
+  }, [statusSugerido]);
 
-  // Atualiza status local se o banco mudar e estiver à frente ou for a carga inicial
+  // Sincronização inicial e com mudanças no banco
   useEffect(() => {
     if (statusAtual) {
+      // 1. Atualizar limite de navegacao (fluxo unidirecional)
       if (hierarquia[statusAtual] > hierarquia[statusMaximo]) {
         setStatusMaximo(statusAtual);
       }
 
-      // Sincroniza local apenas se o banco estiver à frente do seletor (carga inicial ou atualização remota)
-      if (hierarquia[statusAtual] > hierarquia[status]) {
+      // 2. Segue o banco se não houver sugestão ativa
+      if (!statusSugerido) {
         setStatus(statusAtual);
       }
     }
-  }, [statusAtual]);
+  }, [statusAtual, statusSugerido]);
+
+  // Reagir a sugestões externas específicas (Confirmar Prioridade)
+  useEffect(() => {
+    if (statusSugerido) {
+      console.log("Aplicando sugestão externa:", statusSugerido);
+      setStatus(statusSugerido);
+      // Limpamos no pai após o consumo para evitar loops ou travamentos
+      const timer = setTimeout(() => limparSugerido?.(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [statusSugerido, limparSugerido]);
 
   async function salvarNota() {
     try {
@@ -905,25 +921,46 @@ export default function DetalhesDoChamado() {
                             return `${item.adminNome || "Sistema"} alterou o status para ${formatarValor(item.para)}`;
                           }
                           if (item.tipo === "mudanca_prioridade") {
-                            return `${item.adminNome || "Sistema"} alterou a prioridade para ${formatarValor(item.para)}`;
+                            return `O administrador atualizou a prioridade para ${formatarValor(item.para)}`;
                           }
-                          return item.adminNome || "Sistema";
+                          // Fallback para logs antigos salvos como nota
+                          if (item.tipo === "nota" && item.texto?.startsWith("Prioridade:")) {
+                            const val = item.texto.split(": ")[1];
+                            return `O administrador atualizou a prioridade para ${val}`;
+                          }
+                          return item.adminNome || item.nome || "Sistema";
                         })()}
-                        {item.tipo === "nota" && item.texto !== "Chamado Criado" && ""}
                       </div>
                       <div style={{ fontSize: "0.75rem", opacity: 0.5, marginBottom: 6 }}>
                         {formatarData(item.criadoEm)}
                       </div>
 
-                      {item.tipo === "mudanca_prioridade" && (
-                        <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+                      {(item.tipo === "mudanca_prioridade" || (item.tipo === "nota" && item.texto?.startsWith("Prioridade:"))) && (
+                        <div style={{
+                          fontSize: "0.85rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          marginTop: 4
+                        }}>
                           {(() => {
                             const nomes = { baixa: "Baixa", normal: "Normal", alta: "Alta", urgente: "Urgente" };
-                            const de = nomes[item.de] || item.de;
-                            const para = nomes[item.para] || item.para;
+                            const cores = { baixa: "#32c8ff", normal: "#10b981", alta: "#f97316", urgente: "#b24fff" };
+
+                            let valor = item.para;
+                            if (item.tipo === "nota") {
+                              const v = item.texto.split(": ")[1]?.toLowerCase();
+                              valor = v;
+                            }
+
+                            const label = nomes[valor] || valor;
+                            const cor = cores[valor] || "#888";
+
                             return (
                               <>
-                                {de} → <strong>{para}</strong>
+                                <FaCheckCircle color={cor} />
+                                <span style={{ opacity: 0.8 }}>Prioridade:</span>
+                                <strong style={{ color: cor }}>{label}</strong>
                               </>
                             );
                           })()}
@@ -960,7 +997,7 @@ export default function DetalhesDoChamado() {
                           onDefinida={() => setStatusSugerido("andamento")}
                         />
                       )}
-                      {item.texto && (
+                      {item.texto && !item.texto.startsWith("Prioridade:") && (
                         <div
                           style={{
                             fontSize: "0.9rem",

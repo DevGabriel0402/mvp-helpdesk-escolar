@@ -493,9 +493,14 @@ export default function BuscarChamado() {
                               return `${item.adminNome || "Sistema"} alterou o status para ${formatarValor(item.para)}`;
                             }
                             if (item.tipo === "mudanca_prioridade") {
-                              return `${item.adminNome || "Sistema"} alterou a prioridade para ${formatarValor(item.para)}`;
+                              return `O administrador atualizou a prioridade para ${formatarValor(item.para)}`;
                             }
-                            return item.adminNome || "Sistema";
+                            // Fallback para logs antigos salvos como nota
+                            if (item.tipo === "nota" && item.texto?.startsWith("Prioridade:")) {
+                              const val = item.texto.split(": ")[1];
+                              return `O administrador atualizou a prioridade para ${val}`;
+                            }
+                            return item.adminNome || item.nome || "Sistema";
                           })()}
                           {item.tipo === "nota" && ""}
                         </div>
@@ -503,15 +508,32 @@ export default function BuscarChamado() {
                           {formatarData(item.criadoEm)}
                         </div>
 
-                        {item.tipo === "mudanca_prioridade" && (
-                          <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+                        {(item.tipo === "mudanca_prioridade" || (item.tipo === "nota" && item.texto?.startsWith("Prioridade:"))) && (
+                          <div style={{
+                            fontSize: "0.85rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            marginTop: 4
+                          }}>
                             {(() => {
                               const nomes = { baixa: "Baixa", normal: "Normal", alta: "Alta", urgente: "Urgente" };
-                              const de = nomes[item.de] || item.de;
-                              const para = nomes[item.para] || item.para;
+                              const cores = { baixa: "#32c8ff", normal: "#10b981", alta: "#f97316", urgente: "#b24fff" };
+
+                              let valor = item.para;
+                              if (item.tipo === "nota") {
+                                const v = item.texto.split(": ")[1]?.toLowerCase();
+                                valor = v;
+                              }
+
+                              const label = nomes[valor] || valor;
+                              const cor = cores[valor] || "#888";
+
                               return (
                                 <>
-                                  {de} → <strong>{para}</strong>
+                                  <FaCheckCircle color={cor} />
+                                  <span style={{ opacity: 0.8 }}>Prioridade:</span>
+                                  <strong style={{ color: cor }}>{label}</strong>
                                 </>
                               );
                             })()}
@@ -538,7 +560,7 @@ export default function BuscarChamado() {
                             })()}
                           </div>
                         )}
-                        {item.texto && (
+                        {item.texto && !item.texto.startsWith("Prioridade:") && (
                           <div
                             style={{
                               fontSize: "0.9rem",

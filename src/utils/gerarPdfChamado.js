@@ -138,26 +138,36 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
   doc.text(descLines, margin + 8, y + 1);
   y += (descLines.length * 5) + 12;
 
+  const drawTimelineLine = (startY, endY) => {
+    doc.setDrawColor(226, 232, 240); // corBorda
+    doc.setLineWidth(0.5);
+    doc.line(margin + 8, startY, margin + 8, endY);
+  };
+
+  const drawTimelineIcon = (yCoord) => {
+    const xIcon = margin + 8;
+    // Círculo de fundo unificado (azul suave)
+    doc.setFillColor(...corFundoDesc);
+    doc.setDrawColor(226, 232, 240);
+    doc.circle(xIcon, yCoord - 1, 2.5, "FD");
+  };
+
   // Histórico de Atualizações
   if (atualizacoes && atualizacoes.length > 0) {
-    y = checkPageBreak(y, 20);
+    y = checkPageBreak(y, 25);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...corFraco);
     doc.setFontSize(10);
     doc.text("Histórico de Mudanças", margin, y);
-    y += 6;
+    y += 10;
 
-    atualizacoes.forEach(att => {
+    let startTimelineY = y - 5;
+
+    atualizacoes.forEach((att, idx) => {
       const formatarValor = (v) => {
         const nomes = {
-          aberto: "Recebido",
-          andamento: "Em Andamento",
-          prodabel: "Prodabel",
-          resolvido: "Resolvido",
-          baixa: "Baixa",
-          normal: "Normal",
-          alta: "Alta",
-          urgente: "Urgente",
+          aberto: "Recebido", andamento: "Em Andamento", prodabel: "Prodabel", resolvido: "Resolvido",
+          baixa: "Baixa", normal: "Normal", alta: "Alta", urgente: "Urgente",
         };
         return nomes[v] || v;
       };
@@ -166,60 +176,119 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
       if (att.tipo === "mudanca_status") {
         textoAtt = `${att.adminNome || "Sistema"} alterou o status para ${formatarValor(att.para)}`;
       } else if (att.tipo === "mudanca_prioridade") {
-        textoAtt = `${att.adminNome || "Sistema"} alterou a prioridade para ${formatarValor(att.para)}`;
+        textoAtt = `O administrador atualizou a prioridade para ${formatarValor(att.para)}`;
       } else if (att.tipo === "criacao") {
         textoAtt = "Chamado Criado";
+      } else if (att.tipo === "nota" && att.texto?.startsWith("Prioridade:")) {
+        // Fallback para logs antigos
+        const val = att.texto.split(": ")[1];
+        textoAtt = `O administrador atualizou a prioridade para ${val}`;
       } else {
         textoAtt = att.texto || "Atualização no chamado";
       }
 
       const dataAtt = formatarDataPdf(att.criadoEm);
-      const linha = `${dataAtt} - ${textoAtt}`;
-      const attLines = doc.splitTextToSize(linha, contentWidth - 10);
+      const attLines = doc.splitTextToSize(textoAtt, contentWidth - 25);
 
-      y = checkPageBreak(y, attLines.length * 5 + 2);
-      doc.setFont("helvetica", "normal");
+      const isPrio = att.tipo === "mudanca_prioridade" || (att.tipo === "nota" && att.texto?.startsWith("Prioridade:"));
+      const isStatus = att.tipo === "mudanca_status";
+      const needed = (attLines.length * 5) + ((isPrio || isStatus) ? 15 : 10);
+
+      y = checkPageBreak(y, needed);
+      const iconY = y; // Posição do ícone atual
+      drawTimelineIcon(iconY);
+
+      // 1. Título
+      doc.setFont("helvetica", "bold");
       doc.setTextColor(...corTexto);
-      doc.setFontSize(8);
-      doc.text(attLines, margin + 5, y);
-      y += (attLines.length * 5) + 1;
+      doc.setFontSize(9);
+      doc.text(attLines, margin + 15, y);
+      y += (attLines.length * 5);
+
+      // 2. Data/Hora
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...corFraco);
+      doc.setFontSize(7);
+      doc.text(dataAtt, margin + 15, y);
+      y += 5;
+
+      // 3. Sub-linhas específicas
+      if (isPrio) {
+        const cores = { baixa: [50, 200, 255], normal: [16, 185, 129], alta: [249, 115, 22], urgente: [178, 79, 255] };
+        let valor = att.para;
+        if (att.tipo === "nota" && att.texto) {
+          valor = att.texto.split(": ")[1]?.toLowerCase();
+        }
+        const corFinal = cores[valor] || [128, 128, 128];
+        const labelPrio = valor ? valor.charAt(0).toUpperCase() + valor.slice(1) : "";
+
+        doc.setTextColor(...corFinal);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        y += 5;
+      } else if (isStatus) {
+        const nomes = { aberto: "Recebido", andamento: "Em Andamento", prodabel: "Prodabel", resolvido: "Resolvido" };
+        const de = nomes[att.de] || att.de || "Início";
+        const para = nomes[att.para] || att.para;
+        const textoStatus = (att.de === "aberto" && att.para === "aberto")
+          ? `Criado -> ${para}`
+          : `${de} -> ${para}`;
+
+        doc.setTextColor(...corTexto);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+
+        y += 5;
+      }
+
+      if (idx < atualizacoes.length - 1 || (comentarios && comentarios.length > 0)) {
+        drawTimelineLine(iconY + 2.5, y - 2);
+      }
     });
     y += 5;
   }
 
   // Comentários/Notas
   if (comentarios && comentarios.length > 0) {
-    y = checkPageBreak(y, 20);
+    y = checkPageBreak(y, 25);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...corFraco);
     doc.setFontSize(10);
-    doc.text("Comentários e Notas", margin, y);
-    y += 6;
+    doc.text("Conversa e Notas", margin, y);
+    y += 10;
 
-    comentarios.forEach(com => {
+    comentarios.forEach((com, idx) => {
       const autor = com.nome || "Anônimo";
       const papel = com.papel ? ` (${com.papel})` : "";
       const dataCom = formatarDataPdf(com.criadoEm);
       const textoCom = com.mensagem || "";
 
       const headerCom = `${autor}${papel} - ${dataCom}`;
-      const bodyLines = doc.splitTextToSize(textoCom, contentWidth - 15);
+      const bodyLines = doc.splitTextToSize(textoCom, contentWidth - 30);
 
-      y = checkPageBreak(y, bodyLines.length * 5 + 15);
+      const needed = (bodyLines.length * 5) + 15;
+      y = checkPageBreak(y, needed);
+
+      drawTimelineIcon(y);
 
       doc.setFillColor(...corFundoDesc);
-      doc.roundedRect(margin + 5, y - 4, contentWidth - 10, (bodyLines.length * 5) + 10, 2, 2, "F");
+      doc.roundedRect(margin + 15, y - 4, contentWidth - 20, (bodyLines.length * 5) + 10, 2, 2, "F");
 
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...corTextoHeader);
       doc.setFontSize(8);
-      doc.text(headerCom, margin + 8, y + 1);
+      doc.text(headerCom, margin + 18, y + 1);
 
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...corTexto);
-      doc.text(bodyLines, margin + 8, y + 6);
+      doc.text(bodyLines, margin + 18, y + 6);
 
-      y += (bodyLines.length * 5) + 14;
+      const oldY = y;
+      y += needed;
+
+      if (idx < comentarios.length - 1) {
+        drawTimelineLine(oldY + 2.5, y - 1);
+      }
     });
   }
 
