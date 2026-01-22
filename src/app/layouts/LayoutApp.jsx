@@ -792,6 +792,7 @@ export default function LayoutApp() {
   const { modo, alternarTema } = usarTema();
   const { naoLidas } = usarNotificacoes();
   const painel = usePainelPublico("escola_padrao");
+  const location = useLocation();
   const [online, setOnline] = useState(navigator.onLine);
   const [notifAberto, setNotifAberto] = useState(false);
 
