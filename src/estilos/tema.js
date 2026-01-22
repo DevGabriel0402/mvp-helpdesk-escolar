@@ -1,7 +1,7 @@
 const temaEscuro = {
     nome: "escuro",
     cores: {
-        fundo: "#0a0b0e",
+        fundo: "#17191D",
         fundo2: "#12141a",
         texto: "#f5f5f5",
         textoFraco: "rgba(245,245,245,0.6)",

@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -12,9 +12,10 @@ import {
   FaSun,
   FaCheck,
   FaTrash,
+  FaListUl,
 } from "react-icons/fa";
 // Changed Home icon to Dashboard icon as requested
-import { RxDashboard } from "react-icons/rx";
+// RxDashboard removed
 import { useAuth } from "../../contextos/AuthContexto";
 import { usarTema } from "../../contextos/TemaContexto";
 import { usarNotificacoes } from "../../contextos/NotificacoesContexto";
@@ -42,9 +43,10 @@ const Sidebar = styled.aside`
     top: 0;
 
     background: ${({ theme }) => theme.cores.vidro};
-    border-right: 1px solid ${({ theme }) => theme.cores.borda};
-    padding: 20px;
-    gap: 10px;
+    border-right: 1px solid ${({ theme }) => theme.nome === 'escuro' ? theme.cores.pretoTransparente : theme.cores.fundo};
+    padding: 24px 0 24px 16px; /* Ajustado para toque lateral */
+    gap: 8px;
+    overflow: visible;
   }
 `;
 
@@ -53,8 +55,8 @@ const MarcaPainel = styled.div`
   align-items: center;
   gap: 10px;
   min-width: 0;
-  margin-bottom: 20px;
-  padding-left: 10px;
+  margin-bottom: 30px;
+  padding-right: 16px;
 `;
 
 const LogoPainel = styled.img`
@@ -113,32 +115,42 @@ const ItemContainer = styled.div`
 
 const ActiveBackground = styled(motion.div)`
   position: absolute;
-  inset: 0;
-  background: ${({ theme }) => theme.cores.destaque};
-  border-radius: 6px;
+  top: -4px;
+  bottom: -4px;
+  left: -16px;
+  right: -1px; /* Toca exatamente a borda do sidebar */
+  
+  background: ${({ theme }) => theme.nome === 'escuro' ? theme.cores.pretoTransparente : theme.cores.fundo};
+  border: 1px solid ${({ theme }) => theme.nome === 'escuro' ? 'transparent' : theme.cores.borda};
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  
   z-index: 0;
 `;
 
-const SidebarLink = styled(NavLink)`
+const SidebarLinkBase = Link;
+
+const SidebarLink = styled(SidebarLinkBase)`
   position: relative;
-  width: 100%; /* Ensure full width as requested */
+  width: calc(100% + 1px);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px 0 0 10px;
   color: ${({ theme }) => theme.cores.textoFraco};
   font-weight: 500;
-  transition: color 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
   text-decoration: none;
 
   &:hover {
     color: ${({ theme }) => theme.cores.texto};
+    background: ${({ theme }) => theme.nome === 'escuro' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)'};
   }
 
   &.active {
-    color: white;
+    color: ${({ theme }) => theme.nome === 'escuro' ? '#fff' : theme.cores.texto};
     font-weight: 700;
   }
 `;
@@ -146,6 +158,7 @@ const SidebarLink = styled(NavLink)`
 const SidebarBottom = styled.div`
   margin-top: auto;
   padding-top: 12px;
+  padding-right: 16px;
   border-top: 1px solid ${({ theme }) => theme.cores.borda};
   display: grid;
   gap: 8px;
@@ -154,10 +167,9 @@ const SidebarBottom = styled.div`
 const BotaoLogout = styled.button`
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 6px;
+  border-radius: 10px;
   width: 100%;
 
   font-weight: 600;
@@ -166,30 +178,38 @@ const BotaoLogout = styled.button`
   background: transparent;
   color: #ff4d4d;
   border: 1px solid rgba(255, 77, 77, 0.2);
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     background: rgba(255, 77, 77, 0.1);
     border-color: #ff4d4d;
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const ThemeToggleBtn = styled.button`
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
   width: 100%;
 
   border: 1px solid ${({ theme }) => theme.cores.borda};
   background: transparent;
-  color: ${({ theme }) => theme.cores.texto};
+  color: ${({ theme }) => theme.cores.textoFraco};
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    background: ${({ theme }) => theme.cores.brancoTransparente};
+    color: ${({ theme }) => theme.cores.texto};
+    background: ${({ theme }) => theme.nome === 'escuro' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'};
+    border-color: rgba(255, 255, 255, 0.1);
   }
 `;
 
@@ -631,29 +651,29 @@ const TabIndicator = styled(motion.div)`
 
 const AbaLink = styled(NavLink)`
   height: 72px;
-  border-radius: 8px;
+  border-radius: 12px;
   position: relative;
 
   display: grid;
   place-items: center;
-  color: ${({ theme }) => theme.cores.texto};
-  opacity: 0.6;
-  transition:
-    opacity 0.2s,
-    color 0.2s;
+  color: ${({ theme }) => theme.cores.textoFraco};
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
   text-decoration: none;
 
+  &:hover {
+    color: ${({ theme }) => theme.cores.texto};
+  }
+
   &.active {
-    opacity: 1;
-    color: white;
+    color: #fff;
   }
 `;
 
 // eslint-disable-next-line no-unused-vars
-function NavItemDesktop({ to, icon: Icon, label, end = false }) {
+function NavItemDesktop({ to, icon: Icon, label, end = false, active = null }) {
   const location = useLocation();
-  const isActive = end ? location.pathname === to : location.pathname.startsWith(to);
+  const isActive = active !== null ? active : (end ? location.pathname === to : location.pathname.startsWith(to));
 
   // Separate layoutId for desktop
   const layoutId = "desktop-nav-bg";
@@ -675,9 +695,9 @@ function NavItemDesktop({ to, icon: Icon, label, end = false }) {
   );
 }
 // eslint-disable-next-line no-unused-vars
-function AbaMobile({ to, icon: Icon, title, end = false }) {
+function AbaMobile({ to, icon: Icon, title, end = false, active = null }) {
   const location = useLocation();
-  const isActive = end ? location.pathname === to : location.pathname.startsWith(to);
+  const isActive = active !== null ? active : (end ? location.pathname === to : location.pathname.startsWith(to));
 
   return (
     <AbaLink to={to} end={end ? 1 : 0} title={title} className={isActive ? "active" : ""}>
@@ -697,9 +717,8 @@ function MobileTabBar({ eVisitante }) {
   ];
 
   const rotasAdmin = [
-    { to: "/app/admin", icon: RxDashboard, title: "Dashboard", end: true },
+    { to: "/app/admin", icon: FaListUl, title: "Chamados", end: true },
     { to: "/app/buscar", icon: FaSearch, title: "Buscar" },
-    { to: "/app/chamados/novo", icon: FaPlusCircle, title: "Novo chamado" },
     { to: "/app/notificacoes", icon: FaBell, title: "Notificacoes" },
     { to: "/app/perfil", icon: FaUser, title: "Perfil" },
   ];
@@ -710,12 +729,17 @@ function MobileTabBar({ eVisitante }) {
   // Calcula qual aba está ativa
   const indiceAtivo = useMemo(() => {
     return rotas.findIndex((rota) => {
+      // Se for admin e estiver em novo chamado, a aba "Chamados" (/app/admin) deve ficar ativa
+      if (!eVisitante && rota.to === "/app/admin" && location.pathname === "/app/chamados/novo") {
+        return true;
+      }
+
       if (rota.end) {
         return location.pathname === rota.to;
       }
       return location.pathname.startsWith(rota.to);
     });
-  }, [location.pathname, rotas]);
+  }, [location.pathname, rotas, eVisitante]);
 
   // Calcula a posição do indicador (em %)
   // Fórmula: centro da aba = (indice + 0.5) * (100 / total)
@@ -753,6 +777,7 @@ function MobileTabBar({ eVisitante }) {
             icon={rota.icon}
             title={rota.title}
             end={rota.end}
+            active={!eVisitante && rota.to === "/app/admin" && location.pathname === "/app/chamados/novo"}
           />
         ))}
       </TabBarInner>
@@ -862,14 +887,23 @@ export default function LayoutApp() {
         </MarcaPainel>
 
         {!eVisitante && (
-          // Use RxDashboard for Admin Home
-          <NavItemDesktop to="/app/admin" end icon={RxDashboard} label="Dashboard" />
+          // Use FaListUl for Admin Home
+          <NavItemDesktop
+            to="/app/admin"
+            end
+            icon={FaListUl}
+            label="Chamados"
+            active={location.pathname === "/app/admin" || location.pathname.startsWith("/app/chamados/")}
+          />
         )}
-        <NavItemDesktop
-          to="/app/chamados/novo"
-          icon={FaPlusCircle}
-          label="Novo Chamado"
-        />
+        {eVisitante && (
+          <NavItemDesktop
+            to="/app/chamados/novo"
+            icon={FaPlusCircle}
+            label="Novo Chamado"
+            active={location.pathname.startsWith("/app/chamados/")}
+          />
+        )}
         <NavItemDesktop to="/app/buscar" icon={FaSearch} label="Buscar" />
 
         {!eVisitante && (

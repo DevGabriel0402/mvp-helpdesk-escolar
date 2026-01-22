@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useAuth } from "../../../contextos/AuthContexto";
 import { ouvirChamadosDaEscola } from "../../../servicos/firebase/chamadosServico";
@@ -6,7 +7,8 @@ import { Cartao } from "../../../componentes/ui/Cartao";
 import TabelaChamados from "../../../componentes/admin/TabelaChamados";
 import Skeleton, { SkeletonRow } from "../../../componentes/ui/Skeleton";
 import SelectPersonalizado from "../../../componentes/ui/SelectPersonalizado";
-import { FaTicketAlt, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
+import { FaTicketAlt, FaCheckCircle, FaExclamationCircle, FaPlusCircle } from "react-icons/fa";
+import DatePickerPersonalizado from "../../../componentes/ui/DatePickerPersonalizado";
 
 const Container = styled.div`
   display: flex;
@@ -63,8 +65,26 @@ const StatLabel = styled.span`
 `;
 
 const FiltroWrapper = styled.div`
-  width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 
+  @media (max-width: 600px) {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+`;
+
+const InputDataWrapper = styled.div`
+  width: 160px;
+  @media (max-width: 600px) {
+    width: 100%;
+  }
+`;
+
+const SelectWrapper = styled.div`
+  width: 160px;
   @media (max-width: 600px) {
     width: 100%;
   }
@@ -87,8 +107,17 @@ const OPCOES_FILTRO = [
 
 export default function AreaAdmin() {
   const { perfil, eAdmin } = useAuth();
+  const navegar = useNavigate();
   const [chamados, setChamados] = useState(null); // null = loading, [] = vazio
   const [filtro, setFiltro] = useState("todos");
+
+  const [filtroData, setFiltroData] = useState(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
 
   useEffect(() => {
     if (!perfil?.escolaId) return;
@@ -114,23 +143,35 @@ export default function AreaAdmin() {
     };
   }, [chamados]);
 
-  // Filtra chamados baseado na seleção
   const chamadosFiltrados = useMemo(() => {
-    if (!chamados) return [];
-    if (filtro === "todos") return chamados;
+    let lista = chamados || [];
 
+    // Filtro por Status
     if (filtro === "pendentes") {
-      return chamados.filter((c) =>
+      lista = lista.filter((c) =>
         ["aberto", "andamento", "prodabel"].includes(c.status),
       );
+    } else if (filtro === "concluido") {
+      lista = lista.filter((c) => c.status === "resolvido");
     }
 
-    if (filtro === "concluido") {
-      return chamados.filter((c) => c.status === "resolvido");
+    // Filtro por Data
+    if (filtroData) {
+      lista = lista.filter((c) => {
+        if (!c.criadoEm?.toDate) return false;
+        const dataDoc = c.criadoEm.toDate();
+        const dataFiltro = new Date(filtroData + "T00:00:00");
+
+        return (
+          dataDoc.getDate() === dataFiltro.getDate() &&
+          dataDoc.getMonth() === dataFiltro.getMonth() &&
+          dataDoc.getFullYear() === dataFiltro.getFullYear()
+        );
+      });
     }
 
-    return chamados;
-  }, [chamados, filtro]);
+    return lista;
+  }, [chamados, filtro, filtroData]);
 
   if (!eAdmin) {
     return <p>Acesso negado.</p>;
@@ -140,11 +181,39 @@ export default function AreaAdmin() {
     <Container>
       <Header>
         <div>
-          <h2 style={{ margin: 0 }}>Dashboard</h2>
+          <h2 style={{ margin: 0 }}>Chamados</h2>
           <p style={{ margin: "4px 0 0 0", opacity: 0.6 }}>
             Bem-vindo, {perfil?.nome?.split(" ")[0]}.
           </p>
         </div>
+
+        <button
+          onClick={() => navegar("/app/chamados/novo")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 18px",
+            borderRadius: 12,
+            border: "1px solid rgba(128, 128, 128, 0.2)",
+            background: "transparent",
+            color: "inherit",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.2s",
+            marginRight: window.innerWidth >= 768 ? "60px" : "0",
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = "rgba(128, 128, 128, 0.1)";
+            e.currentTarget.style.transform = "translateY(-2px)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          <FaPlusCircle /> Novo Chamado
+        </button>
       </Header>
 
       <StatsGrid>
@@ -189,17 +258,26 @@ export default function AreaAdmin() {
         )}
       </StatsGrid>
 
-      <Cartao style={{ padding: 0, overflow: "hidden" }}>
+      <Cartao style={{ padding: 0, overflow: "visible" }}>
         <div style={{ padding: "16px 16px 0 16px" }}>
           <ListaHeader>
             <h3 style={{ margin: 0 }}>Lista de Chamados</h3>
             <FiltroWrapper>
-              <SelectPersonalizado
-                valor={filtro}
-                onChange={setFiltro}
-                opcoes={OPCOES_FILTRO}
-                placeholder="Filtrar..."
-              />
+              <InputDataWrapper>
+                <DatePickerPersonalizado
+                  valor={filtroData}
+                  onChange={setFiltroData}
+                  placeholder="Filtrar por data"
+                />
+              </InputDataWrapper>
+              <SelectWrapper>
+                <SelectPersonalizado
+                  valor={filtro}
+                  onChange={setFiltro}
+                  opcoes={OPCOES_FILTRO}
+                  placeholder="Status..."
+                />
+              </SelectWrapper>
             </FiltroWrapper>
           </ListaHeader>
         </div>

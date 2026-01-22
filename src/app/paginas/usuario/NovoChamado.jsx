@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FaArrowLeft } from "react-icons/fa";
 import styled from "styled-components";
 import { toast } from "react-toastify";
 import { CampoTexto } from "../../../componentes/ui/CampoTexto";
@@ -170,9 +171,32 @@ export default function NovoChamado() {
 
   return (
     <Caixa>
-      <h2 style={{ marginBottom: 24, marginTop: 0 }}>Novo Chamado</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        {!eVisitante && (
+          <button
+            onClick={() => navegar(-1)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 8,
+              borderRadius: '50%',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+            onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <FaArrowLeft size={18} />
+          </button>
+        )}
+        <h2 style={{ margin: 0 }}>Novo Chamado</h2>
+      </div>
       <Subtitulo>
-        Preencha os dados e acompanhe as atualizacoes pelo numero do chamado.
+        Preencha os dados e acompanhe as atualizações pelo número do chamado.
       </Subtitulo>
 
       <Form onSubmit={handleSubmit}>

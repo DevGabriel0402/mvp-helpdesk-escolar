@@ -62,4 +62,28 @@ export const GlobalStyle = createGlobalStyle`
     padding: 0;
     margin: 0;
   }
+
+  /* Personalização do Input Date */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(0.5);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    color: ${({ theme }) => theme.cores.texto};
+    padding: 0 1px;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text {
+    color: ${({ theme }) => theme.cores.textoFraco};
+    padding: 0 2px;
+  }
 `;

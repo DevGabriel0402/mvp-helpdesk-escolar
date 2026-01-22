@@ -11,7 +11,7 @@ const Wrapper = styled.div`
 const BotaoSelect = styled.button`
   width: 100%;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: 16px;
 
   border: 1px solid ${({ theme }) => theme.cores.borda};
   background: ${({ theme }) => theme.cores.pretoTransparente};
@@ -51,11 +51,13 @@ const Menu = styled(Cartao)`
   max-height: 260px;
   overflow: auto;
 
-  padding: 6px;
-  padding: 6px;
+  padding: 8px;
+  border-radius: 20px;
   background: ${({ theme }) => theme.cores.menuFundo};
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   border-color: ${({ theme }) => theme.cores.borda};
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3);
 
   display: grid;
   gap: 4px;
