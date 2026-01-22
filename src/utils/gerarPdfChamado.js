@@ -225,7 +225,13 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
       if (att.tipo === "mudanca_status") {
         textoAtt = `${att.adminNome || "Sistema"} alterou o status para ${formatarValor(att.para)}`;
         if (att.para === "prodabel" && att.texto) {
-          textoAtt += `: ${att.texto}`;
+          // Converte formato antigo "N° do chamado: XXXXX" para novo formato
+          let textoExibir = att.texto;
+          if (att.texto.startsWith("N° do chamado:")) {
+            const numero = att.texto.replace("N° do chamado:", "").trim();
+            textoExibir = `Chamado de número ${numero} aberto.`;
+          }
+          textoAtt += `: ${textoExibir}`;
         }
       } else if (att.tipo === "mudanca_prioridade") {
         textoAtt = `${att.adminNome || "O administrador"} atualizou a prioridade para ${formatarValor(att.para)}`;
@@ -312,6 +318,22 @@ export async function gerarPdfChamado({ chamado, painel, atualizacoes = [], come
           doc.setFont("helvetica", "normal");
           doc.text(attLines, margin + 15, y);
         }
+      } else if (att.tipo === "mudanca_status" && att.para === "prodabel" && att.texto) {
+        // Encaminhamento para Prodabel: parte principal em negrito, número do chamado em normal
+        const textoPrincipal = `${att.adminNome || "Sistema"} alterou o status para Encaminhado para Prodabel: `;
+        doc.setFont("helvetica", "bold");
+        doc.text(textoPrincipal, margin + 15, y);
+
+        const larguraTexto = doc.getTextWidth(textoPrincipal);
+        doc.setFont("helvetica", "normal");
+
+        // Texto do número do chamado
+        let textoNumero = att.texto;
+        if (att.texto.startsWith("N° do chamado:")) {
+          const numero = att.texto.replace("N° do chamado:", "").trim();
+          textoNumero = `Chamado de número ${numero} aberto.`;
+        }
+        doc.text(textoNumero, margin + 15 + larguraTexto, y);
       } else {
         // Atualizações de sistema (Negrito)
         doc.setFont("helvetica", "bold");

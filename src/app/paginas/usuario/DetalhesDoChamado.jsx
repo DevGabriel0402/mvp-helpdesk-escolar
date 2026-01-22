@@ -531,7 +531,7 @@ function AcoesAdminChamado({ chamadoId, adminUid, adminNome, statusAtual, status
 
     setEnviandoProdabel(true);
     try {
-      const textoPersonalizado = `N° do chamado: ${numeroChamadoProdabel.trim()}`;
+      const textoPersonalizado = `Chamado de número ${numeroChamadoProdabel.trim()} aberto.`;
 
       await alterarStatusChamadoAdmin({
         chamadoId,
@@ -1100,7 +1100,14 @@ export default function DetalhesDoChamado() {
                             marginTop: 4,
                           }}
                         >
-                          {item.texto}
+                          {(() => {
+                            // Converte formato antigo para o novo
+                            if (item.texto.startsWith("N° do chamado:")) {
+                              const numero = item.texto.replace("N° do chamado:", "").trim();
+                              return `Chamado de número ${numero} aberto.`;
+                            }
+                            return item.texto;
+                          })()}
                         </div>
                       )}
                     </div>

@@ -59,7 +59,7 @@ const CabecalhoChamado = styled.div`
 const CodigoChamado = styled.span`
   font-family: monospace;
   font-weight: 700;
-  color: ${({ theme }) => theme.cores.destaque};
+  color: ${({ theme }) => theme.cores.texto};
   font-size: 1rem;
 `;
 
@@ -582,7 +582,14 @@ export default function BuscarChamado() {
                               marginTop: 4,
                             }}
                           >
-                            {item.texto}
+                            {(() => {
+                              // Converte formato antigo para o novo
+                              if (item.texto.startsWith("N° do chamado:")) {
+                                const numero = item.texto.replace("N° do chamado:", "").trim();
+                                return `Chamado de número ${numero} aberto.`;
+                              }
+                              return item.texto;
+                            })()}
                           </div>
                         )}
                       </div>
