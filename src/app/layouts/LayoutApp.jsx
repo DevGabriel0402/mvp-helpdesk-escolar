@@ -13,6 +13,7 @@ import {
   FaCheck,
   FaTrash,
   FaListUl,
+  FaChartPie,
 } from "react-icons/fa";
 // Changed Home icon to Dashboard icon as requested
 // RxDashboard removed
@@ -717,6 +718,7 @@ function MobileTabBar({ eVisitante }) {
   ];
 
   const rotasAdmin = [
+    { to: "/app/dashboard", icon: FaChartPie, title: "Dashboard" },
     { to: "/app/admin", icon: FaListUl, title: "Chamados", end: true },
     { to: "/app/buscar", icon: FaSearch, title: "Buscar" },
     { to: "/app/notificacoes", icon: FaBell, title: "Notificacoes" },
@@ -886,6 +888,15 @@ export default function LayoutApp() {
           </NomePainel>
         </MarcaPainel>
 
+        {!eVisitante && (
+          // Admin Dashboard
+          <NavItemDesktop
+            to="/app/dashboard"
+            icon={FaChartPie}
+            label="Dashboard"
+            active={location.pathname === "/app/dashboard"}
+          />
+        )}
         {!eVisitante && (
           // Use FaListUl for Admin Home
           <NavItemDesktop

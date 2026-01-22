@@ -10,7 +10,8 @@ import NovoChamado from "../paginas/usuario/NovoChamado";
 import BuscarChamado from "../paginas/usuario/BuscarChamado";
 import DetalhesDoChamado from "../paginas/usuario/DetalhesDoChamado";
 
-import AreaAdmin from "../paginas/admin/AreaAdmin";
+import AreaAdmin from "../paginas/admin/AreaAdmin"; // Antiga "AreaAdmin" agora é "Chamados"
+import DashboardAdmin from "../paginas/admin/DashboardAdmin"; // NOVO
 import NotificacoesAdmin from "../paginas/admin/NotificacoesAdmin";
 import PerfilAdmin from "../paginas/admin/PerfilAdmin";
 
@@ -23,12 +24,11 @@ function InicioApp() {
   const { eVisitante, eAdmin } = useAuth();
 
   if (eAdmin) {
-    // Admin: Redireciona para a rota explicita do Dashboard
-    return <Navigate to="admin" replace />;
+    // Admin: Redireciona para o Dashboard novo
+    return <Navigate to="dashboard" replace />;
   }
 
   // Visitante OU Usuario Comum: Vai direto pra Novo Chamado (fluxo rapido)
-  // Futuramente podemos criar um Dashboard para Usuario Comum
   return <Navigate to="chamados/novo" replace />;
 }
 
@@ -49,19 +49,15 @@ export default function Rotas() {
           </RotaProtegida>
         }
       >
-        {/* 
-                  Rota INDEX (/app):
-                  - Se Admin: Renderiza AreaAdmin (Dashboard) e ABA Dashboard fica ativa.
-                  - Se Visitante: Redireciona para NovoChamado e ABA NovoChamado fica ativa.
-                  Isso resolve o "melhore isso" onde o usuario clicava Home e nada acontecia ou ia pra outro lugar confuso.
-                */}
         <Route index element={<InicioApp />} />
 
+        {/* Rotas Comuns */}
         <Route path="buscar" element={<BuscarChamado />} />
         <Route path="chamados/novo" element={<NovoChamado />} />
         <Route path="chamados/:id" element={<DetalhesDoChamado />} />
 
         {/* Rotas Admin */}
+        <Route path="dashboard" element={<DashboardAdmin />} />
         <Route path="admin" element={<AreaAdmin />} />
         <Route path="notificacoes" element={<NotificacoesAdmin />} />
         <Route path="perfil" element={<PerfilAdmin />} />
