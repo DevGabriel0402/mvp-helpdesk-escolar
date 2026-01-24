@@ -28,6 +28,7 @@ messaging.onBackgroundMessage((payload) => {
         data: payload?.data || {},
         tag: 'helpdesk-notification',
         requireInteraction: false,
+        silent: true, // 🔇 Remove o som da notificação
     };
 
     return self.registration.showNotification(title, options);
