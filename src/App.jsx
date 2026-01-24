@@ -15,8 +15,13 @@ function AppConteudo() {
   const { temaAtual } = usarTema();
 
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(() => { });
+    window.addEventListener("load", async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+        console.log("[SW] Registrado:", reg.scope);
+      } catch (e) {
+        console.error("[SW] Falha ao registrar:", e);
+      }
     });
   }
 
