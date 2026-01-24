@@ -210,8 +210,22 @@ const InfoMeta = styled.div`
   color: ${({ theme }) => theme.cores.textoFraco};
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-bottom: 6px;
+  width: fit-content;
+
+  span {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 `;
 
 const Descricao = styled.p`
@@ -897,15 +911,13 @@ export default function DetalhesDoChamado() {
         <Titulo>{chamado?.titulo || "Carregando..."}</Titulo>
 
         <InfoMeta>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span>
             <FaMapMarkerAlt /> {chamado?.localDoProblema || "Local não definido"}
           </span>
-          <span>•</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span>
             <FaUser /> {chamado?.criadoPorNome || "Anônimo"}
           </span>
-          <span>•</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span>
             <FaRegCalendarAlt /> {formatarData(chamado?.criadoEm)}
           </span>
         </InfoMeta>
@@ -1201,69 +1213,71 @@ export default function DetalhesDoChamado() {
       </div>
 
       {/* Modal de Confirmação de Exclusão */}
-      {modalExcluirAberto && (
-        <ModalOverlay onClick={() => setModalExcluirAberto(false)}>
-          <ModalBox onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: "0 0 16px 0", color: "#ff4d4d" }}>
-              <FaTrashAlt style={{ marginRight: 8 }} />
-              Excluir Chamado
-            </h3>
-            <p style={{ margin: "0 0 16px 0", opacity: 0.8 }}>
-              Esta ação é irreversível. Para confirmar, digite{" "}
-              <strong style={{ color: "#ff4d4d" }}>excluir</strong> abaixo:
-            </p>
-            <InputExcluir
-              type="text"
-              placeholder="Digite 'excluir'"
-              value={confirmacaoExcluir}
-              onChange={(e) => setConfirmacaoExcluir(e.target.value)}
-            />
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                onClick={() => {
-                  setModalExcluirAberto(false);
-                  setConfirmacaoExcluir("");
-                }}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: 8,
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  background: "transparent",
-                  color: "inherit",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleExcluir}
-                disabled={excluindo}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: 8,
-                  border: "none",
-                  background:
-                    confirmacaoExcluir.toLowerCase() === "excluir"
-                      ? "#ff4d4d"
-                      : "rgba(255,77,77,0.3)",
-                  color: "white",
-                  cursor:
-                    confirmacaoExcluir.toLowerCase() === "excluir"
-                      ? "pointer"
-                      : "not-allowed",
-                  fontWeight: 600,
-                  opacity: excluindo ? 0.7 : 1,
-                }}
-              >
-                {excluindo ? "Excluindo..." : "Confirmar"}
-              </button>
-            </div>
-          </ModalBox>
-        </ModalOverlay>
-      )}
-    </Grid>
+      {
+        modalExcluirAberto && (
+          <ModalOverlay onClick={() => setModalExcluirAberto(false)}>
+            <ModalBox onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ margin: "0 0 16px 0", color: "#ff4d4d" }}>
+                <FaTrashAlt style={{ marginRight: 8 }} />
+                Excluir Chamado
+              </h3>
+              <p style={{ margin: "0 0 16px 0", opacity: 0.8 }}>
+                Esta ação é irreversível. Para confirmar, digite{" "}
+                <strong style={{ color: "#ff4d4d" }}>excluir</strong> abaixo:
+              </p>
+              <InputExcluir
+                type="text"
+                placeholder="Digite 'excluir'"
+                value={confirmacaoExcluir}
+                onChange={(e) => setConfirmacaoExcluir(e.target.value)}
+              />
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => {
+                    setModalExcluirAberto(false);
+                    setConfirmacaoExcluir("");
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: 8,
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    background: "transparent",
+                    color: "inherit",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleExcluir}
+                  disabled={excluindo}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: 8,
+                    border: "none",
+                    background:
+                      confirmacaoExcluir.toLowerCase() === "excluir"
+                        ? "#ff4d4d"
+                        : "rgba(255,77,77,0.3)",
+                    color: "white",
+                    cursor:
+                      confirmacaoExcluir.toLowerCase() === "excluir"
+                        ? "pointer"
+                        : "not-allowed",
+                    fontWeight: 600,
+                    opacity: excluindo ? 0.7 : 1,
+                  }}
+                >
+                  {excluindo ? "Excluindo..." : "Confirmar"}
+                </button>
+              </div>
+            </ModalBox>
+          </ModalOverlay>
+        )
+      }
+    </Grid >
   );
 }
