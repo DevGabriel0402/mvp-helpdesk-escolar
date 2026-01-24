@@ -15,6 +15,8 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db, auth } from "./firebaseConfig"; // <- precisa exportar auth também
+import { getAuth } from "firebase/auth";
+
 
 // ===============================
 // Helpers de Cache (localStorage)
@@ -26,13 +28,12 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 // ===============================
 async function dispararPushNovoChamado({ chamadoId, escolaId }) {
   try {
-    const auth = getAuth();
     const user = auth.currentUser;
     if (!user) return;
 
     const idToken = await user.getIdToken();
 
-    const resp = await fetch("/api/push/novo-chamado", {
+    const resp = await fetch("/api/push-novo-chamado", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -49,6 +50,7 @@ async function dispararPushNovoChamado({ chamadoId, escolaId }) {
     console.warn("Falha ao disparar push:", e);
   }
 }
+
 
 function getCachedData(key) {
   try {

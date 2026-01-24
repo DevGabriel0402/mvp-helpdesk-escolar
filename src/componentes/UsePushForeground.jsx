@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { getMessaging, onMessage } from "firebase/messaging";
 import { toast } from "react-toastify";
 
-export function usePushForeground() {
+export function UsePushForeground() {
     useEffect(() => {
         let unsubscribe = null;
 
