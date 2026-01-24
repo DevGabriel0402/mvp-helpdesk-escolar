@@ -179,8 +179,22 @@ const InfoMeta = styled.div`
   color: ${({ theme }) => theme.cores.textoFraco};
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-bottom: 6px;
+  width: fit-content;
+
+  span {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 `;
 
 const Descricao = styled.p`
@@ -386,16 +400,14 @@ export default function BuscarChamado() {
           <Titulo>{chamado.titulo}</Titulo>
 
           <InfoMeta>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <FaMapMarkerAlt /> {chamado.localDoProblema || "Local não definido"}
+            <span>
+              <FaMapMarkerAlt /> {chamado?.localDoProblema || "Local não definido"}
             </span>
-            <span>•</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <FaUser /> {chamado.criadoPorNome || "Anônimo"}
+            <span>
+              <FaUser /> {chamado?.criadoPorNome || "Anônimo"}
             </span>
-            <span>•</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <FaRegCalendarAlt /> {formatarData(chamado.criadoEm)}
+            <span>
+              <FaRegCalendarAlt /> {formatarData(chamado?.criadoEm)}
             </span>
           </InfoMeta>
 
