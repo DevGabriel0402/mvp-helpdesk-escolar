@@ -8,6 +8,8 @@ import { Botao } from "../../../componentes/ui/Botao";
 import { useNavigate, Link } from "react-router-dom";
 import { FaUserShield, FaEnvelope, FaLock, FaSignInAlt } from "react-icons/fa";
 
+import { registrarPushAdmin } from "../../../servicos/firebase/pushServico";
+
 const Caixa = styled.div`
   background: ${({ theme }) => theme.cores.fundo2};
   border: 1px solid ${({ theme }) => theme.cores.borda};
@@ -50,6 +52,15 @@ export default function LoginAdmin() {
         setCarregando(true);
         try {
             await entrarComEmailSenha(email, senha);
+            // ✅ tenta registrar push (não bloqueia o login)
+            try {
+                const r = await registrarPushAdmin({ escolaId: "escola_padrao" });
+                if (!r.ok) {
+                    console.log("Push não ativado:", r.motivo);
+                }
+            } catch (e) {
+                console.log("Falha ao registrar push:", e);
+            }
             toast.success("Bem-vindo, administrador!");
             navegar("/app/admin"); // Explicit admin dashboard route
         } catch (err) {

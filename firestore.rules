@@ -11,24 +11,45 @@ service cloud.firestore {
         && request.auth.token.firebase.sign_in_provider == "anonymous";
     }
 
-    function temDocUsuario() { 
-      return estaLogado() && exists(/databases/$(database)/documents/usuarios/$(uid())); 
+    function refUsuario() {
+      return /databases/$(database)/documents/usuarios/$(uid());
+    }
+
+    function temDocUsuario() {
+      return estaLogado() && exists(refUsuario());
+    }
+
+    function dadosUsuario() {
+      return temDocUsuario() ? get(refUsuario()).data : null;
+    }
+
+    function eAdmin() {
+      return temDocUsuario()
+        && (dadosUsuario().papel == "admin");
+    }
+
+    function escolaDoUsuario() {
+      return temDocUsuario() ? dadosUsuario().escolaId : null;
     }
 
     function validacaoChamadoCriacao(d) {
       return d.escolaId is string
         && d.numeroChamado is int
         && d.codigoChamado is string
+
         && d.criadoPorUid is string
         && d.criadoPorNome is string
         && d.criadoPorTipo in ["visitante", "admin", "usuario"]
         && (d.criadoPorEmail is string || d.criadoPorEmail == null)
+
         && d.titulo is string
         && d.descricao is string
         && d.localDoProblema is string
+
         && d.categoriaId is string
         && (d.prioridade in ["baixa", "normal", "alta", "urgente"] || d.prioridade == null)
         && d.status in ["aberto", "andamento", "resolvido", "prodabel"]
+
         && (d.responsavelUid is string || d.responsavelUid == null)
         && d.anexos is list;
     }
@@ -38,18 +59,23 @@ service cloud.firestore {
       allow read: if estaLogado();
       allow create, update, delete: if temDocUsuario();
 
-      // Permitir admin atualizar painel público (configuracoes/painel)
+      // configuracoes publicas (o visitante usa para nome/logo do painel)
       match /configuracoes/{docId} {
         allow read: if true;
         allow create, update: if temDocUsuario();
         allow delete: if false;
       }
+
+      // ✅ tokens push dentro de escolas
+      match /tokensPush/{tokenId} {
+        // Somente admin pode ler/escrever tokens da própria escola
+        allow read, create, update, delete: if eAdmin() && escolaId == escolaDoUsuario();
+      }
     }
 
     // ===== usuarios =====
     match /usuarios/{usuarioId} {
-      // Qualquer usuário logado pode ler qualquer documento de usuario
-      // (necessário para verificar papel de admin)
+      // Necessário para admin verificar papel (você deixou aberto para logados)
       allow read: if estaLogado();
 
       // Criar próprio perfil de admin
@@ -58,7 +84,7 @@ service cloud.firestore {
         && request.resource.data.papel == "admin"
         && request.resource.data.escolaId is string;
 
-      // Atualizar próprio perfil ou se for admin
+      // Atualizar próprio perfil ou admin (temDocUsuario já implica “logado com doc”)
       allow update: if estaLogado() && (usuarioId == uid() || temDocUsuario());
 
       allow delete: if false;
@@ -80,10 +106,8 @@ service cloud.firestore {
       allow create, update: if estaLogado()
         && request.resource.data.ultimoNumeroChamado is int
         && (
-          // Criação inicial
           !exists(/databases/$(database)/documents/contadores/$(escolaId))
           ||
-          // Incremento válido
           (resource.data.ultimoNumeroChamado is int
             && request.resource.data.ultimoNumeroChamado == resource.data.ultimoNumeroChamado + 1)
         );
@@ -94,32 +118,37 @@ service cloud.firestore {
     // ===== chamados =====
     match /chamados/{chamadoId} {
 
-      // Leitura: qualquer usuário logado com documento pode ler, ou dono do chamado
+      // leitura:
+      // - admin (qualquer doc usuario) pode ler
+      // - dono do chamado pode ler
+      // - anonimo pode ler chamados da escola_padrao (para busca por numero/codigo)
       allow read: if estaLogado() && (
         temDocUsuario()
         || resource.data.criadoPorUid == uid()
         || (eAnonimo() && resource.data.escolaId == "escola_padrao")
       );
 
-      // Criação
+      // criação:
+      // - visitante/usuario cria na escola_padrao
+      // - admin cria (precisa ter doc usuario)
       allow create: if estaLogado()
         && request.resource.data.criadoPorUid == uid()
         && validacaoChamadoCriacao(request.resource.data)
         && (
-          // Visitante/usuário na escola_padrao
           (
             request.resource.data.escolaId == "escola_padrao"
             && request.resource.data.criadoPorTipo in ["visitante", "usuario"]
           )
-          || 
-          // Admin (tem documento de usuario)
+          ||
           (
             temDocUsuario()
             && request.resource.data.criadoPorTipo == "admin"
           )
         );
 
-      // Atualização: admin ou dono
+      // update:
+      // - admin atualiza qualquer coisa
+      // - dono só pode atualizar campos “seguros” (mantém seus travamentos)
       allow update: if estaLogado() && (
         temDocUsuario()
         ||
@@ -135,7 +164,7 @@ service cloud.firestore {
 
       allow delete: if temDocUsuario();
 
-      // Comentários
+      // ===== comentarios =====
       match /comentarios/{comentarioId} {
         allow read: if estaLogado();
 
@@ -149,16 +178,15 @@ service cloud.firestore {
         allow update, delete: if temDocUsuario();
       }
 
-      // Atualizações/Histórico
+      // ===== atualizacoes =====
       match /atualizacoes/{atualizacaoId} {
-        // Permite leitura do histórico para qualquer usuário autenticado (visitante, usuário ou admin)
         allow read: if estaLogado();
 
         allow create: if temDocUsuario()
           && request.resource.data.tipo in [
             "mudanca_status", "atribuido", "mudanca_prioridade", "mudanca_categoria", "nota"
           ]
-          && request.resource.data.get('texto', "") is string
+          && request.resource.data.texto is string
           && request.resource.data.adminUid == uid()
           && request.resource.data.adminNome is string;
 

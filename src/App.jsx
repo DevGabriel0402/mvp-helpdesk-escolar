@@ -13,6 +13,13 @@ import Rotas from "./app/rotas/Rotas";
 function AppConteudo() {
   const { temaAtual } = usarTema();
 
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(() => { });
+    });
+  }
+
+
   return (
     <ThemeProvider theme={temaAtual}>
       <GlobalStyle />
