@@ -14,12 +14,41 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { db, auth } from "./firebaseConfig"; // <- precisa exportar auth também
 
 // ===============================
 // Helpers de Cache (localStorage)
 // ===============================
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+// ===============================
+// Push: chamar API Vercel
+// ===============================
+async function dispararPushNovoChamado({ chamadoId, escolaId }) {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const idToken = await user.getIdToken();
+
+    const resp = await fetch("/api/push/novo-chamado", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ chamadoId, escolaId }),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      console.warn("Push API falhou:", resp.status, txt);
+    }
+  } catch (e) {
+    console.warn("Falha ao disparar push:", e);
+  }
+}
 
 function getCachedData(key) {
   try {
@@ -42,7 +71,7 @@ function setCachedData(key, data) {
       JSON.stringify({
         data,
         timestamp: Date.now(),
-      }),
+      })
     );
   } catch {
     // localStorage cheio ou indisponível
@@ -53,6 +82,43 @@ function setCachedData(key, data) {
 function gerarCodigoChamado(numeroChamado) {
   const numeroFormatado = String(numeroChamado).padStart(5, "0");
   return `OS N°${numeroFormatado}`;
+}
+
+// ===============================
+// Push: chamar API Vercel
+// ===============================
+async function enviarPushNovoChamado({
+  escolaId,
+  codigoChamado,
+  numeroChamado,
+  titulo,
+  chamadoId,
+}) {
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const idToken = await user.getIdToken();
+    if (!idToken) return;
+
+    await fetch("/api/push-novo-chamado", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        escolaId,
+        codigoChamado,
+        numeroChamado,
+        titulo,
+        chamadoId,
+      }),
+    });
+  } catch (err) {
+    // push não pode quebrar criação do chamado
+    console.warn("Falha ao enviar push (não bloqueante):", err);
+  }
 }
 
 export async function criarChamado({ escolaId, usuario, dadosChamado }) {
@@ -121,10 +187,28 @@ export async function criarChamado({ escolaId, usuario, dadosChamado }) {
       id: refNovoChamado.id,
       numeroChamado: novoNumero,
       codigoChamado,
+      titulo: payload.titulo,
+      escolaId: payload.escolaId,
     };
   });
 
+  // ✅ Push automático (não bloqueia)
+  await enviarPushNovoChamado({
+    escolaId: resultado.escolaId,
+    codigoChamado: resultado.codigoChamado,
+    numeroChamado: resultado.numeroChamado,
+    titulo: resultado.titulo,
+    chamadoId: resultado.id,
+  });
+
+  // Dispara push para admins (fora da transação)
+  await dispararPushNovoChamado({
+    chamadoId: resultado.id,
+    escolaId,
+  });
+
   return resultado;
+
 }
 
 export async function buscarChamadoPorNumero({
@@ -135,13 +219,13 @@ export async function buscarChamadoPorNumero({
 }) {
   if (!escolaId) throw new Error("escolaId obrigatorio");
 
-  // ✅ tipoConsulta:
-  // - "visitante" => restringe query para bater com as rules
-  // - "admin" => pode buscar livre dentro da escola do admin
   const filtros = [where("escolaId", "==", escolaId)];
 
-  // ✅ Para visitante/usuario, precisamos bater com podeLerChamado:
-  // escola_padrao + criadoPorTipo in ["visitante","usuario"]
+  // OBS:
+  // Esse filtro "criadoPorTipo in [...]" pode causar erro de index em alguns casos
+  // e também não garante leitura se rules exigirem dono do chamado.
+  // Mantive porque você já tinha, mas se continuar falhando, eu ajusto sua lógica/Rules
+  // para "busca pública" segura (por numero + codigo + escola).
   if (tipoConsulta === "visitante") {
     filtros.push(where("criadoPorTipo", "in", ["visitante", "usuario"]));
   }
@@ -153,14 +237,14 @@ export async function buscarChamadoPorNumero({
       collection(db, "chamados"),
       ...filtros,
       where("codigoChamado", "==", ticketCode),
-      limit(1),
+      limit(1)
     );
   } else {
     q = query(
       collection(db, "chamados"),
       ...filtros,
       where("numeroChamado", "==", Number(ticketNumber)),
-      limit(1),
+      limit(1)
     );
   }
 
@@ -219,7 +303,6 @@ export async function adicionarComentarioNoChamado({
     criadoEm: serverTimestamp(),
   });
 
-  // atualiza ultima atividade no chamado
   await updateDoc(doc(db, "chamados", chamadoId), {
     atualizadoEm: serverTimestamp(),
     ultimaAtividadeEm: serverTimestamp(),
@@ -261,7 +344,7 @@ export async function adicionarAtualizacaoAdmin({
 // ===============================
 export async function alterarStatusChamadoAdmin({
   chamadoId,
-  novoStatus, // "aberto" | "andamento" | "resolvido"
+  novoStatus, // "aberto" | "andamento" | "resolvido" | "prodabel"
   adminUid,
   adminNome,
   texto = "",
@@ -288,29 +371,24 @@ export async function alterarStatusChamadoAdmin({
       resolvido: 3,
     };
 
-    // Regra: o status so pode avançar na hierarquia, nunca retroceder
     if (hierarquia[novoStatus] < hierarquia[statusAtual]) {
-      throw new Error(`Nao e possivel retornar o status de ${statusAtual} para ${novoStatus}.`);
+      throw new Error(
+        `Nao e possivel retornar o status de ${statusAtual} para ${novoStatus}.`
+      );
     }
 
-    // atualiza o documento principal
     const dadosUpdate = {
       status: novoStatus,
       atualizadoEm: serverTimestamp(),
       ultimaAtividadeEm: serverTimestamp(),
     };
 
-    // opcional: marcar finalizadoEm quando resolvido
     if (novoStatus === "resolvido") {
       dadosUpdate.finalizadoEm = serverTimestamp();
-    } else {
-      // se quiser “reabrir” e limpar finalizadoEm, comente essa linha
-      // dadosUpdate.finalizadoEm = null;
     }
 
     transacao.update(refChamado, dadosUpdate);
 
-    // cria atualizacao (log)
     const refNovaAtualizacao = doc(refAtualizacoes);
     transacao.set(refNovaAtualizacao, {
       tipo: "mudanca_status",
@@ -325,12 +403,12 @@ export async function alterarStatusChamadoAdmin({
 }
 
 // ===============================
-// 5) Listeners para timeline (comentarios + atualizacoes)
+// 5) Listeners timeline
 // ===============================
 export function ouvirComentarios(chamadoId, callback) {
   const q = query(
     collection(db, "chamados", chamadoId, "comentarios"),
-    orderBy("criadoEm", "asc"),
+    orderBy("criadoEm", "asc")
   );
   return onSnapshot(q, (snap) => {
     const itens = snap.docs.map((d) => ({
@@ -345,7 +423,7 @@ export function ouvirComentarios(chamadoId, callback) {
 export function ouvirAtualizacoes(chamadoId, callback) {
   const q = query(
     collection(db, "chamados", chamadoId, "atualizacoes"),
-    orderBy("criadoEm", "asc"),
+    orderBy("criadoEm", "asc")
   );
   return onSnapshot(q, (snap) => {
     const itens = snap.docs.map((d) => ({
@@ -360,21 +438,17 @@ export function ouvirAtualizacoes(chamadoId, callback) {
 export function ouvirChamadosDaEscola(escolaId, callback) {
   const cacheKey = `chamados_escola_${escolaId}`;
 
-  // Retornar dados do cache imediatamente (se existir)
   const cached = getCachedData(cacheKey);
-  if (cached) {
-    callback(cached);
-  }
+  if (cached) callback(cached);
 
   const q = query(
     collection(db, "chamados"),
     where("escolaId", "==", escolaId),
-    orderBy("criadoEm", "desc"),
+    orderBy("criadoEm", "desc")
   );
 
   return onSnapshot(q, (snap) => {
     const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    // Atualizar cache
     setCachedData(cacheKey, lista);
     callback(lista);
   });
@@ -385,9 +459,7 @@ export function ouvirChamadosDaEscola(escolaId, callback) {
 // ===============================
 export async function excluirChamadoAdmin(chamadoId) {
   if (!chamadoId) throw new Error("chamadoId obrigatório");
-
-  const refChamado = doc(db, "chamados", chamadoId);
-  await deleteDoc(refChamado);
+  await deleteDoc(doc(db, "chamados", chamadoId));
 }
 
 // ===============================
@@ -414,14 +486,12 @@ export async function alterarPrioridadeChamadoAdmin({
     const atual = snap.data();
     const prioridadeAtual = atual.prioridade || "normal";
 
-    // atualiza o documento principal
     transacao.update(refChamado, {
       prioridade: novaPrioridade,
       atualizadoEm: serverTimestamp(),
       ultimaAtividadeEm: serverTimestamp(),
     });
 
-    // cria atualização (log)
     const refNovaAtualizacao = doc(refAtualizacoes);
     transacao.set(refNovaAtualizacao, {
       tipo: "mudanca_prioridade",
@@ -436,7 +506,7 @@ export async function alterarPrioridadeChamadoAdmin({
 }
 
 // ===============================
-// Confirmar Prioridade + "Receber" Chamado (Status aberto)
+// Confirmar Prioridade + "Receber" Chamado
 // ===============================
 export async function confirmarPrioridadeEReceberChamado({
   chamadoId,
@@ -451,7 +521,6 @@ export async function confirmarPrioridadeEReceberChamado({
     const snap = await transacao.get(refChamado);
     if (!snap.exists()) throw new Error("Chamado nao encontrado.");
 
-    // 1) Atualiza prioridade e garante status "aberto" (Recebido)
     transacao.update(refChamado, {
       prioridade: novaPrioridade,
       status: "aberto",
@@ -459,7 +528,6 @@ export async function confirmarPrioridadeEReceberChamado({
       ultimaAtividadeEm: serverTimestamp(),
     });
 
-    // 2) Log de prioridade: "O administrador atualizou a prioridade..."
     const refNotaPrio = doc(refAtualizacoes);
     transacao.set(refNotaPrio, {
       tipo: "mudanca_prioridade",
@@ -471,7 +539,6 @@ export async function confirmarPrioridadeEReceberChamado({
       criadoEm: serverTimestamp(),
     });
 
-    // 3) Log de status para transição visual no front
     const refStatusLog = doc(refAtualizacoes);
     transacao.set(refStatusLog, {
       tipo: "mudanca_status",
@@ -485,8 +552,9 @@ export async function confirmarPrioridadeEReceberChamado({
   });
 }
 
+// ===============================
+// Excluir chamado (alias / compat)
+// ===============================
 export async function excluirChamado(chamadoId) {
-  if (!chamadoId) throw new Error("chamadoId obrigatorio");
-  const docRef = doc(db, "chamados", chamadoId);
-  await deleteDoc(docRef);
+  return excluirChamadoAdmin(chamadoId);
 }

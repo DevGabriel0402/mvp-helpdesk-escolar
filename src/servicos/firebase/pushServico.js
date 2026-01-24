@@ -1,133 +1,70 @@
 import { getMessaging, getToken, isSupported } from "firebase/messaging";
-import { auth, db } from "./firebaseConfig";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "./firebaseConfig"; // ajuste o caminho se precisar
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
-// Função auxiliar para aguardar Service Worker estar ativo
-async function aguardarServiceWorkerAtivo(registration) {
-    if (registration.active) {
-        return registration;
+export async function registrarPushAdmin() {
+    const suportado = await isSupported();
+    if (!suportado) return { ok: false, motivo: "Navegador não suporta push." };
+
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return { ok: false, motivo: "Permissão negada." };
+
+    const uid = auth.currentUser?.uid;
+    if (!uid) return { ok: false, motivo: "Sem usuário logado." };
+
+    const originalUA = navigator.userAgent;
+
+    const cacheKey = "fcm_token_admin";
+
+    const tokenSalvo = localStorage.getItem(cacheKey);
+    if (tokenSalvo) {
+        // opcional: só atualiza ultimoAcessoEm no Firestore e sai
     }
 
-    return new Promise((resolve, reject) => {
-        const worker = registration.installing || registration.waiting;
 
-        if (!worker) {
-            reject(new Error('Service Worker não encontrado'));
-            return;
-        }
-
-        const timeout = setTimeout(() => {
-            reject(new Error('Timeout ao ativar Service Worker'));
-        }, 10000);
-
-        worker.addEventListener('statechange', function handler(e) {
-            if (e.target.state === 'activated') {
-                clearTimeout(timeout);
-                worker.removeEventListener('statechange', handler);
-                resolve(registration);
-            } else if (e.target.state === 'redundant') {
-                clearTimeout(timeout);
-                worker.removeEventListener('statechange', handler);
-                reject(new Error('Service Worker tornou-se redundante'));
+    Object.defineProperty(navigator, 'userAgent', {
+        get: function () {
+            if (originalUA.includes('iPhone')) {
+                return 'iPhone-App';
+            } else if (originalUA.includes('Windows')) {
+                return 'Web-Windows';
+            } else if (originalUA.includes('Android')) {
+                return 'Android-App';
+            } else {
+                return 'Dispositivo-Desconhecido';
             }
-        });
+        },
+        configurable: true
     });
-}
 
-export async function registrarPushAdmin({ escolaId = "escola_padrao" } = {}) {
-    try {
-        // 1. Verifica suporte
-        const suportado = await isSupported();
-        if (!suportado) {
-            return { ok: false, motivo: "Navegador não suporta push." };
-        }
+    // garante que o SW está pronto
+    const reg = await navigator.serviceWorker.ready;
 
-        if (!("Notification" in window)) {
-            return { ok: false, motivo: "Notificações não suportadas." };
-        }
+    const messaging = getMessaging();
 
-        // 2. Pede permissão
-        let perm = Notification.permission;
-        if (perm === 'default') {
-            perm = await Notification.requestPermission();
-        }
+    const token = await getToken(messaging, {
+        vapidKey: import.meta.env.VITE_FCM_VAPID_KEY,
+        serviceWorkerRegistration: reg,
+    });
 
-        if (perm !== "granted") {
-            return { ok: false, motivo: "Permissão negada." };
-        }
+    if (!token) return { ok: false, motivo: "Não foi possível gerar token." };
 
-        // 3. Registra Service Worker SEM escopo customizado
-        console.log('Registrando Service Worker...');
-        let regFCM;
+    // docId = token (padrão recomendado)
+    await setDoc(
+        doc(db, "escolas", "escola_padrao", "tokensPush", token),
+        {
+            token,
+            tipo: "admin",
+            uidAdmin: uid,
+            ativo: true,
+            criadoEm: serverTimestamp(),
+            ultimoAcessoEm: serverTimestamp(),
+            plataforma: originalUA,
+        },
+        { merge: true }
+    );
 
-        // Verifica se já existe
-        const existingReg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+    localStorage.setItem(cacheKey, token);
 
-        if (existingReg) {
-            console.log('Service Worker já registrado');
-            regFCM = existingReg;
-        } else {
-            regFCM = await navigator.serviceWorker.register(
-                "/firebase-messaging-sw.js"
-                // ✅ SEM scope customizado - usa o padrão '/'
-            );
-            console.log('Service Worker registrado:', regFCM);
-        }
-
-        // 4. Aguarda o Service Worker estar ativo
-        console.log('Aguardando Service Worker ativar...');
-        await aguardarServiceWorkerAtivo(regFCM);
-
-        // Aguarda mais um pouco para garantir
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        console.log('Service Worker ativo!');
-
-        // 5. Obtém o messaging
-        const messaging = getMessaging();
-
-        // 6. Obtém o token
-        console.log('Obtendo token FCM...');
-        const token = await getToken(messaging, {
-            vapidKey: import.meta.env.VITE_FCM_VAPID_KEY,
-            serviceWorkerRegistration: regFCM,
-        });
-
-        if (!token) {
-            return { ok: false, motivo: "Não foi possível obter token." };
-        }
-
-        console.log('Token obtido:', token.substring(0, 20) + '...');
-
-        // 7. Salva no Firestore
-        const uid = auth.currentUser?.uid;
-        if (!uid) {
-            return { ok: false, motivo: "Sem usuário logado." };
-        }
-
-        await setDoc(
-            doc(db, "escolas", escolaId, "tokensPush", token),
-            {
-                token,
-                tipo: "admin",
-                uidAdmin: uid,
-                criadoEm: serverTimestamp(),
-                ultimoAcessoEm: serverTimestamp(),
-                userAgent: navigator.userAgent,
-            },
-            { merge: true }
-        );
-
-        console.log('Token salvo no Firestore');
-
-        return { ok: true, token };
-
-    } catch (error) {
-        console.error('Erro completo ao registrar push:', error);
-        return {
-            ok: false,
-            motivo: error.message || "Erro desconhecido",
-            erro: error
-        };
-    }
+    return { ok: true, token };
 }

@@ -9,6 +9,7 @@ import { ProvedorTema, usarTema } from "./contextos/TemaContexto";
 import { ProvedorNotificacoes } from "./contextos/NotificacoesContexto";
 import { ProvedorCarregando } from "./contextos/CarregandoContexto";
 import Rotas from "./app/rotas/Rotas";
+import { UsePushForeground } from "./componentes/UsePushForeground";
 
 function AppConteudo() {
   const { temaAtual } = usarTema();
@@ -22,6 +23,7 @@ function AppConteudo() {
 
   return (
     <ThemeProvider theme={temaAtual}>
+      <UsePushForeground />
       <GlobalStyle />
       <ToastContainer
         autoClose={3000}
