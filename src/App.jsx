@@ -17,7 +17,7 @@ function AppConteudo() {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", async () => {
       try {
-        const reg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+        const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
         console.log("[SW] Registrado:", reg.scope);
       } catch (e) {
         console.error("[SW] Falha ao registrar:", e);
