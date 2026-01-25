@@ -86,4 +86,23 @@ export const GlobalStyle = createGlobalStyle`
     color: ${({ theme }) => theme.cores.textoFraco};
     padding: 0 2px;
   }
+
+  /* Estilo para telas menores (Mobile) */
+@media only screen and (max-width: 480px) {
+  .Toastify__toast-container {
+    width: 90vw; /* Define a largura para 90% da tela */
+    left: 5vw;   /* Centraliza (100 - 90 / 2) */
+    margin: 0;
+    padding: 0;
+  }
+
+  .Toastify__toast {
+    margin-bottom: 12px;
+    border-radius: 8px; /* Dá um aspecto mais moderno no mobile */
+    min-height: 50px;   /* Ajusta a altura mínima */
+    font-size: 14px;    /* Melhora a leitura em telas pequenas */
+  }
+}
 `;
+
+
