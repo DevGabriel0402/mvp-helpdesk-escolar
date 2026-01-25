@@ -10,7 +10,6 @@ export function UsePushForeground() {
             try {
                 const messaging = getMessaging();
                 unsubscribe = onMessage(messaging, (payload) => {
-                    console.log("Mensagem recebida (foreground):", payload);
 
                     const title = payload.notification?.title || "Notificação";
                     const body = payload.notification?.body || "";

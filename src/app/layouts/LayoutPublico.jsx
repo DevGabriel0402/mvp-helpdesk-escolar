@@ -1,5 +1,6 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import styled from "styled-components";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaMoon, FaSun } from "react-icons/fa";
 import { usarTema } from "../../contextos/TemaContexto";
 
@@ -34,15 +35,26 @@ const ToggleBtn = styled.button`
 `;
 
 export default function LayoutPublico() {
-    const { modo, alternarTema } = usarTema();
-    const Icone = modo === "escuro" ? FaSun : FaMoon;
+  const { modo, alternarTema } = usarTema();
+  const location = useLocation();
+  const Icone = modo === "escuro" ? FaSun : FaMoon;
 
-    return (
-        <Container>
-            <ToggleBtn onClick={alternarTema} title="Alternar Tema">
-                <Icone size={20} />
-            </ToggleBtn>
-            <Outlet />
-        </Container>
-    );
+  return (
+    <Container>
+      <ToggleBtn onClick={alternarTema} title="Alternar Tema">
+        <Icone size={20} />
+      </ToggleBtn>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname} // Se houver rotas internas, senão pode ser fixo ou removido
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          style={{ width: '100%', display: 'grid', placeItems: 'center' }}
+        >
+          <Outlet />
+        </motion.div>
+      </AnimatePresence>
+    </Container>
+  );
 }

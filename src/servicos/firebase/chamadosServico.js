@@ -26,30 +26,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 // ===============================
 // Push: chamar API Vercel
 // ===============================
-async function dispararPushNovoChamado({ chamadoId, escolaId }) {
-  try {
-    const user = auth.currentUser;
-    if (!user) return;
 
-    const idToken = await user.getIdToken();
-
-    const resp = await fetch("/api/push-novo-chamado", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({ chamadoId, escolaId }),
-    });
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      console.warn("Push API falhou:", resp.status, txt);
-    }
-  } catch (e) {
-    console.warn("Falha ao disparar push:", e);
-  }
-}
 
 
 function getCachedData(key) {
@@ -203,11 +180,7 @@ export async function criarChamado({ escolaId, usuario, dadosChamado }) {
     chamadoId: resultado.id,
   });
 
-  // Dispara push para admins (fora da transação)
-  await dispararPushNovoChamado({
-    chamadoId: resultado.id,
-    escolaId,
-  });
+
 
   return resultado;
 
