@@ -37,20 +37,20 @@ function chaveStorage({ uid, escolaId }) {
   return `helpdesk:notificacoes:${uid}:${escolaId}`;
 }
 
-// function carregarStorage({ uid, escolaId }) {
-//   try {
-//     if (!uid || !escolaId) return [];
-//     const bruto = localStorage.getItem(chaveStorage({ uid, escolaId }));
-//     return bruto ? JSON.parse(bruto) : [];
-//   } catch {
-//     return [];
-//   }
-// }
+function carregarStorage({ uid, escolaId }) {
+  try {
+    if (!uid || !escolaId) return [];
+    const bruto = localStorage.getItem(chaveStorage({ uid, escolaId }));
+    return bruto ? JSON.parse(bruto) : [];
+  } catch {
+    return [];
+  }
+}
 
-// function salvarStorage({ uid, escolaId }, itens) {
-//   if (!uid || !escolaId) return;
-//   localStorage.setItem(chaveStorage({ uid, escolaId }), JSON.stringify(itens));
-// }
+function salvarStorage({ uid, escolaId }, itens) {
+  if (!uid || !escolaId) return;
+  localStorage.setItem(chaveStorage({ uid, escolaId }), JSON.stringify(itens));
+}
 
 export function ProvedorNotificacoes({ children }) {
   const { usuarioAuth, perfil, eAdmin } = useAuth();
