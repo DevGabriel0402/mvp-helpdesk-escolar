@@ -63,18 +63,30 @@ export default async function handler(req, res) {
         // 3) Envia push
         const message = {
             notification: {
-                icon: "https://res.cloudinary.com/dxs92g9nu/image/upload/v1769286684/ICONE_DA_ESCOLA_-_SITE_zecz6r.png",
-                image: "https://res.cloudinary.com/dxs92g9nu/image/upload/v1769286684/ICONE_DA_ESCOLA_-_SITE_zecz6r.png",
-                badge: "https://res.cloudinary.com/dxs92g9nu/image/upload/v1769286684/ICONE_DA_ESCOLA_-_SITE_zecz6r.png",
                 title: "Novo chamado criado",
                 body: `${codigoChamado} - ${titulo || "Sem título"} \n Clique para ver detalhes`,
             },
+            // Configurações específicas para Navegador (Web)
+            webpush: {
+                notification: {
+                    icon: "https://res.cloudinary.com/...",
+                    badge: "https://res.cloudinary.com/...",
+                    image: "https://res.cloudinary.com/...",
+                    actions: [
+                        { action: 'open', title: 'Visualizar' },
+                        { action: 'close', title: 'Ignorar' }
+                    ],
+                    // Garante que a notificação substitua a anterior do mesmo chamado
+                    tag: `chamado-${chamadoId}`,
+                },
+                fcmOptions: {
+                    link: "/app/admin" // Link nativo para onde o clique deve levar
+                }
+            },
             data: {
                 escolaId,
-                chamadoId: chamadoId || "",
-                codigoChamado: String(codigoChamado),
-                numeroChamado: String(numeroChamado),
-                url: "/app/admin", // ao clicar
+                chamadoId: String(chamadoId || ""),
+                url: "/app/admin",
             },
             tokens,
         };
