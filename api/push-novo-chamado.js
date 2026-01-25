@@ -63,8 +63,11 @@ export default async function handler(req, res) {
         // 3) Envia push
         const message = {
             notification: {
+                icon: "https://res.cloudinary.com/dxs92g9nu/image/upload/v1769286684/ICONE_DA_ESCOLA_-_SITE_zecz6r.png",
+                image: "https://res.cloudinary.com/dxs92g9nu/image/upload/v1769286684/ICONE_DA_ESCOLA_-_SITE_zecz6r.png",
+                badge: "https://res.cloudinary.com/dxs92g9nu/image/upload/v1769286684/ICONE_DA_ESCOLA_-_SITE_zecz6r.png",
                 title: "Novo chamado criado",
-                body: `${codigoChamado} • ${titulo || "Sem título"}`,
+                body: `${codigoChamado} - ${titulo || "Sem título"} \n Clique para ver detalhes`,
             },
             data: {
                 escolaId,
