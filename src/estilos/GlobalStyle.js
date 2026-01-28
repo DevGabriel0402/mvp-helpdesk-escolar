@@ -24,6 +24,9 @@ export const GlobalStyle = createGlobalStyle`
     color: ${({ theme }) => theme.nome === "claro" ? "#000000" : "#ffffff"};
   }
 
+ ::-webkit-scrollbar {background: ${({ theme }) => theme.cores.fundo}}
+ ::-webkit-scrollbar-thumb{ background: ${({ theme }) => theme.cores.fundo2}}
+
   /* Toastify Customization */
   :root {
     --toastify-color-light: ${({ theme }) => theme.cores.fundo2};
