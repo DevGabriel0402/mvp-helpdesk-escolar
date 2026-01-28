@@ -94,8 +94,9 @@ export default function NovoChamado() {
   const categorias = [
     { value: "computador", label: "Computador" },
     { value: "projetor", label: "Projetor" },
-    { value: "programa", label: "Programa" },
+    { value: "impressora", label: "Impressora" },
     { value: "rede", label: "Rede/Internet" },
+    { value: "audio", label: "Equipamento de som" },
     { value: "outros", label: "Outros" },
   ];
   const prioridades = [
